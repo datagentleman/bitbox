@@ -11,28 +11,16 @@ To ensure correct decoding, both encoder and decoder must run on platforms with 
 
 # Run Tests
 
-Run all tests in the module:
+Run all tests in the module (to run them without cache use --count=1):
 
 ```bash
 go test ./...
-```
-
-Run tests without cache:
-
-```bash
-go test --count=1 ./...
 ```
 
 # Run Benchmarks
 
 ```bash
 go test -run '^$' -bench Benchmark -benchmem -count=1 ./benchmark
-```
-
-Run benchmarks multiple times for more stable numbers:
-
-```bash
-go test -run '^$' -bench Benchmark -benchmem -count=3 ./benchmark
 ```
 
 The benchmark output includes:
