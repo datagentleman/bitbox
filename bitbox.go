@@ -59,10 +59,12 @@ func Decode(buf *Buffer, objects ...any) {
 			l := uint32(0)
 			buf.Decode(&l)
 			val.SetBytes(buf.Take(int(l)))
+
 		case val.Kind() == reflect.String:
 			l := uint32(0)
 			buf.Decode(&l)
 			val.SetString(string(buf.Take(int(l))))
+
 		default:
 			// Decode fixed-size basic types (including aliases) and structs.
 			// Structs must be memory aligned.

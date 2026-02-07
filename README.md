@@ -9,6 +9,34 @@ as long as all systems use the same endianness.
 Bitbox writes/read all data using the machine’s native endianness (typically little-endian).
 To ensure correct decoding, both encoder and decoder must run on platforms with the same endianness.
 
+# Wire Protocol Schema
+
+Bitbox encodes values in-order, exactly as passed to `Encode(...)`.
+Decoding must follow the same order and target types.
+
+## Endianness
+
+All fixed-size values are written as raw machine-memory bytes (native endianness).
+Encoder and decoder must run on same endianness architecture.
+
+## Protocol Design
+
+Current implementation is work in progress, more types will be added.
+
+### 1. Basic Fixed Types and Aligned Structs
+
+- Just encode/decode bytes as they go, without any prefix
+
+### 2. []byte, String
+
+- Always adding length prefix
+
+```
++-------------+-----------+
+| uint32(len) | len bytes |
++-------------+-----------+
+```
+
 # Run Tests
 
 Run all tests in the module (to run them without cache use --count=1):
