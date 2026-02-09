@@ -18,25 +18,30 @@ func binaryWrite[T any](b *testing.B, wire *bytes.Buffer, in T) {
 		if _, err := wire.Write(v); err != nil {
 			b.Fatalf("%v", err)
 		}
+
 	case string:
 		if _, err := wire.WriteString(v); err != nil {
 			b.Fatalf("%v", err)
 		}
+
 	case int:
 		x := int64(v)
 		if err := binary.Write(wire, binary.BigEndian, x); err != nil {
 			b.Fatalf("%v", err)
 		}
+
 	case uint:
 		x := uint64(v)
 		if err := binary.Write(wire, binary.BigEndian, x); err != nil {
 			b.Fatalf("%v", err)
 		}
+
 	case uintptr:
 		x := uint64(v)
 		if err := binary.Write(wire, binary.BigEndian, x); err != nil {
 			b.Fatalf("%v", err)
 		}
+
 	default:
 		if err := binary.Write(wire, binary.BigEndian, in); err != nil {
 			b.Fatalf("%v", err)
@@ -52,30 +57,35 @@ func binaryRead[T any](b *testing.B, r *bytes.Reader, out *T) {
 			b.Fatalf("%v", err)
 		}
 		*out = any(buf).(T)
+
 	case string:
 		buf, err := io.ReadAll(r)
 		if err != nil {
 			b.Fatalf("%v", err)
 		}
 		*out = any(string(buf)).(T)
+
 	case int:
 		var x int64
 		if err := binary.Read(r, binary.BigEndian, &x); err != nil {
 			b.Fatalf("%v", err)
 		}
 		*out = any(int(x)).(T)
+
 	case uint:
 		var x uint64
 		if err := binary.Read(r, binary.BigEndian, &x); err != nil {
 			b.Fatalf("%v", err)
 		}
 		*out = any(uint(x)).(T)
+
 	case uintptr:
 		var x uint64
 		if err := binary.Read(r, binary.BigEndian, &x); err != nil {
 			b.Fatalf("%v", err)
 		}
 		*out = any(uintptr(x)).(T)
+
 	default:
 		if err := binary.Read(r, binary.BigEndian, out); err != nil {
 			b.Fatalf("%v", err)
@@ -88,15 +98,17 @@ func benchmarkTypesBitbox[T any](b *testing.B, in T, setBytes int64) {
 	b.SetBytes(setBytes)
 	b.ReportAllocs()
 
-	buf := bitbox.Encode(&in)
+	buf := bitbox.NewBuffer([]byte{})
+	buf = bitbox.Encode(buf, &in)
 	bitbox.Decode(buf, &out)
 	test.AssertEqual(b, in, out)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
+		buf.Clear()
 		var out T
-		buf := bitbox.Encode(&in)
+		buf = bitbox.Encode(buf, &in)
 		bitbox.Decode(buf, &out)
 	}
 }
@@ -112,7 +124,8 @@ func benchmarkTypesGob[T any](b *testing.B, in T, setBytes int64) {
 		b.Fatalf("%v", err)
 	}
 
-	dec := gob.NewDecoder(bytes.NewReader(wire.Bytes()))
+	r := bytes.NewReader(wire.Bytes())
+	dec := gob.NewDecoder(r)
 	if err := dec.Decode(&out); err != nil {
 		b.Fatalf("%v", err)
 	}
@@ -122,13 +135,14 @@ func benchmarkTypesGob[T any](b *testing.B, in T, setBytes int64) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		var wire bytes.Buffer
+		wire.Reset()
 		enc := gob.NewEncoder(&wire)
 		if err := enc.Encode(in); err != nil {
 			b.Fatalf("%v", err)
 		}
 
-		dec := gob.NewDecoder(bytes.NewReader(wire.Bytes()))
+		r.Reset(wire.Bytes())
+		dec := gob.NewDecoder(r)
 		if err := dec.Decode(&out); err != nil {
 			b.Fatalf("%v", err)
 		}
@@ -150,10 +164,10 @@ func benchmarkBinary[T any](b *testing.B, in T, setBytes int64) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		var wire bytes.Buffer
+		wire.Reset()
 		binaryWrite(b, &wire, in)
 
-		r := bytes.NewReader(wire.Bytes())
+		r.Reset(wire.Bytes())
 		binaryRead(b, r, &out)
 	}
 }
@@ -195,11 +209,6 @@ func BenchmarkEncodeDecodeBasicTypes(b *testing.B) {
 			v[i] = byte(i * 31)
 		}
 		runBasicTypes(b, v, int64(len(v))*2)
-	})
-
-	b.Run("array_4xuint32", func(b *testing.B) {
-		v := [4]uint32{1, 2, 3, 4}
-		runBasicTypes(b, v, int64(unsafe.Sizeof(v))*2)
 	})
 
 	b.Run("bool", func(b *testing.B) {

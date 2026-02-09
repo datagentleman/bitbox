@@ -9,34 +9,6 @@ as long as all systems use the same endianness.
 Bitbox writes/read all data using the machine’s native endianness (typically little-endian).
 To ensure correct decoding, both encoder and decoder must run on platforms with the same endianness.
 
-# Wire Protocol Schema
-
-Bitbox encodes values in-order, exactly as passed to `Encode(...)`.
-Decoding must follow the same order and target types.
-
-## Endianness
-
-All fixed-size values are written as raw machine-memory bytes (native endianness).
-Encoder and decoder must run on same endianness architecture.
-
-## Protocol Design
-
-Current implementation is work in progress, more types will be added.
-
-### 1. Basic Fixed Types and Aligned Structs
-
-- Just encode/decode bytes as they go, without any prefix
-
-### 2. []byte, String
-
-- Always adding length prefix
-
-```
-+-------------+-----------+
-| uint32(len) | len bytes |
-+-------------+-----------+
-```
-
 # Run Tests
 
 Run all tests in the module (to run them without cache use --count=1):
@@ -57,78 +29,74 @@ The benchmark output includes:
 - `MB/s`: throughput in megabytes per second
 - `B/op` and `allocs/op`: allocation metrics
 
-# Benchmark Results (Basic Types, Slices, Arrays)
+# Benchmark Results (Basic Types, Slices)
 
 | Type | Codec | ns/op | MB/s | B/op | allocs/op |
 |-----:|:------|------:|-----:|-----:|----------:|
-| slice_128B | Bitbox | 148.44 | 1724.61 | 232 | 6 |
-| slice_128B | Gob | 1176.40 | 217.65 | 2144 | 31 |
-| slice_128B | Binary | 194.04 | 1319.34 | 760 | 5 |
-| slice_4KB | Bitbox | 646.08 | 12681.92 | 4952 | 6 |
-| slice_4KB | Gob | 2735.00 | 2995.28 | 16304 | 31 |
-| slice_4KB | Binary | 2586.00 | 3168.08 | 21624 | 11 |
-| slice_64KB | Bitbox | 9450.20 | 14260.74 | 73816 | 6 |
-| slice_64KB | Gob | 28145.20 | 4684.82 | 222897 | 31 |
-| slice_64KB | Binary | 35835.60 | 3662.31 | 350586 | 20 |
-| array_4xuint32 | Bitbox | 72.40 | 442.02 | 64 | 3 |
-| array_4xuint32 | Gob | 8986.40 | 3.56 | 7656 | 187 |
-| array_4xuint32 | Binary | 196.96 | 162.49 | 208 | 6 |
-| bool | Bitbox | 54.55 | 36.67 | 40 | 2 |
-| bool | Gob | 1016.60 | 1.97 | 1712 | 28 |
-| bool | Binary | 94.70 | 21.12 | 162 | 5 |
-| string | Bitbox | 136.76 | 233.99 | 120 | 7 |
-| string | Gob | 1517.60 | 22.26 | 1816 | 32 |
-| string | Binary | 251.28 | 127.58 | 704 | 6 |
-| int | Bitbox | 63.25 | 253.17 | 48 | 3 |
-| int | Gob | 1199.00 | 13.35 | 1728 | 30 |
-| int | Binary | 121.48 | 131.75 | 184 | 6 |
-| int8 | Bitbox | 74.13 | 28.01 | 40 | 2 |
-| int8 | Gob | 1202.00 | 1.68 | 1712 | 28 |
-| int8 | Binary | 104.82 | 19.15 | 162 | 5 |
-| int16 | Bitbox | 70.40 | 57.45 | 48 | 3 |
-| int16 | Gob | 1999.60 | 2.86 | 1717 | 30 |
-| int16 | Binary | 115.12 | 34.87 | 166 | 6 |
-| int32 | Bitbox | 62.39 | 128.28 | 48 | 3 |
-| int32 | Gob | 1202.00 | 6.67 | 1728 | 30 |
-| int32 | Binary | 152.60 | 55.74 | 172 | 6 |
-| int64 | Bitbox | 68.30 | 236.23 | 48 | 3 |
-| int64 | Gob | 1171.40 | 13.67 | 1728 | 30 |
-| int64 | Binary | 124.22 | 129.48 | 184 | 6 |
-| uint | Bitbox | 62.48 | 256.15 | 48 | 3 |
-| uint | Gob | 1115.40 | 14.35 | 1728 | 30 |
-| uint | Binary | 113.82 | 140.59 | 184 | 6 |
-| uint8 | Bitbox | 57.58 | 34.79 | 40 | 2 |
-| uint8 | Gob | 1099.60 | 1.82 | 1712 | 28 |
-| uint8 | Binary | 97.23 | 20.58 | 162 | 5 |
-| uint16 | Bitbox | 64.29 | 62.31 | 48 | 3 |
-| uint16 | Gob | 1123.20 | 3.56 | 1717 | 30 |
-| uint16 | Binary | 108.24 | 36.96 | 166 | 6 |
-| uint32 | Bitbox | 60.59 | 132.08 | 48 | 3 |
-| uint32 | Gob | 1091.60 | 7.33 | 1728 | 30 |
-| uint32 | Binary | 117.82 | 68.00 | 172 | 6 |
-| uint64 | Bitbox | 65.44 | 244.99 | 48 | 3 |
-| uint64 | Gob | 1176.20 | 13.62 | 1728 | 30 |
-| uint64 | Binary | 118.32 | 135.38 | 184 | 6 |
-| uintptr | Bitbox | 62.29 | 256.87 | 48 | 3 |
-| uintptr | Gob | 1155.00 | 13.86 | 1744 | 30 |
-| uintptr | Binary | 115.66 | 138.40 | 184 | 6 |
-| float32 | Bitbox | 62.97 | 127.06 | 48 | 3 |
-| float32 | Gob | 1161.80 | 6.89 | 1744 | 30 |
-| float32 | Binary | 113.30 | 70.64 | 172 | 6 |
-| float64 | Bitbox | 62.49 | 256.16 | 48 | 3 |
-| float64 | Gob | 1398.00 | 12.02 | 1792 | 31 |
-| float64 | Binary | 113.34 | 141.19 | 184 | 6 |
-| complex64 | Bitbox | 61.51 | 260.15 | 48 | 3 |
-| complex64 | Gob | 1147.20 | 13.95 | 1792 | 31 |
-| complex64 | Binary | 137.62 | 116.25 | 184 | 6 |
-| complex128 | Bitbox | 67.95 | 471.04 | 64 | 3 |
-| complex128 | Gob | 1137.80 | 28.13 | 1816 | 31 |
-| complex128 | Binary | 148.42 | 215.64 | 208 | 6 |
-
+| slice_128B | Bitbox | 88.00 | 2909.20 | 172 | 4 |
+| slice_128B | Gob | 1048 | 244.21 | 1880 | 27 |
+| slice_128B | Binary | 105.7 | 2421.27 | 512 | 1 |
+| slice_4KB | Bitbox | 575.5 | 14234.08 | 4140 | 4 |
+| slice_4KB | Gob | 2170 | 3775.81 | 11320 | 27 |
+| slice_4KB | Binary | 1996 | 4104.71 | 17408 | 7 |
+| slice_64KB | Bitbox | 6980 | 18777.15 | 65580 | 4 |
+| slice_64KB | Gob | 18405 | 7121.57 | 149049 | 27 |
+| slice_64KB | Binary | 30213 | 4338.24 | 284930 | 16 |
+| bool | Bitbox | 13.77 | 145.23 | 1 | 1 |
+| bool | Gob | 909.5 | 2.20 | 1552 | 25 |
+| bool | Binary | 32.87 | 60.85 | 2 | 2 |
+| string | Bitbox | 67.68 | 472.85 | 52 | 4 |
+| string | Gob | 981.4 | 32.61 | 1640 | 28 |
+| string | Binary | 123.7 | 258.78 | 528 | 2 |
+| int | Bitbox | 14.52 | 1101.79 | 8 | 1 |
+| int | Gob | 927.0 | 17.26 | 1568 | 26 |
+| int | Binary | 37.95 | 421.56 | 16 | 2 |
+| int8 | Bitbox | 14.01 | 142.74 | 1 | 1 |
+| int8 | Gob | 955.4 | 2.09 | 1552 | 25 |
+| int8 | Binary | 32.26 | 62.00 | 2 | 2 |
+| int16 | Bitbox | 14.30 | 279.74 | 2 | 1 |
+| int16 | Gob | 934.8 | 4.28 | 1552 | 26 |
+| int16 | Binary | 34.46 | 116.08 | 4 | 2 |
+| int32 | Bitbox | 15.94 | 501.86 | 4 | 1 |
+| int32 | Gob | 947.4 | 8.44 | 1560 | 26 |
+| int32 | Binary | 34.44 | 232.30 | 8 | 2 |
+| int64 | Bitbox | 14.95 | 1070.53 | 8 | 1 |
+| int64 | Gob | 969.6 | 16.50 | 1568 | 26 |
+| int64 | Binary | 37.00 | 432.48 | 16 | 2 |
+| uint | Bitbox | 15.09 | 1060.18 | 8 | 1 |
+| uint | Gob | 949.1 | 16.86 | 1568 | 26 |
+| uint | Binary | 39.02 | 410.01 | 16 | 2 |
+| uint8 | Bitbox | 13.84 | 144.49 | 1 | 1 |
+| uint8 | Gob | 957.3 | 2.09 | 1552 | 25 |
+| uint8 | Binary | 32.80 | 60.98 | 2 | 2 |
+| uint16 | Bitbox | 14.34 | 278.98 | 2 | 1 |
+| uint16 | Gob | 1003 | 3.99 | 1552 | 26 |
+| uint16 | Binary | 34.95 | 114.45 | 4 | 2 |
+| uint32 | Bitbox | 15.58 | 513.62 | 4 | 1 |
+| uint32 | Gob | 946.1 | 8.46 | 1560 | 26 |
+| uint32 | Binary | 34.22 | 233.77 | 8 | 2 |
+| uint64 | Bitbox | 14.52 | 1101.69 | 8 | 1 |
+| uint64 | Gob | 933.4 | 17.14 | 1568 | 26 |
+| uint64 | Binary | 35.99 | 444.56 | 16 | 2 |
+| uintptr | Bitbox | 14.72 | 1087.30 | 8 | 1 |
+| uintptr | Gob | 1080 | 14.82 | 1584 | 26 |
+| uintptr | Binary | 37.57 | 425.90 | 16 | 2 |
+| float32 | Bitbox | 15.62 | 512.27 | 4 | 1 |
+| float32 | Gob | 941.7 | 8.50 | 1576 | 26 |
+| float32 | Binary | 34.61 | 231.17 | 8 | 2 |
+| float64 | Bitbox | 15.55 | 1028.98 | 8 | 1 |
+| float64 | Gob | 979.0 | 16.34 | 1624 | 27 |
+| float64 | Binary | 38.58 | 414.72 | 16 | 2 |
+| complex64 | Bitbox | 14.67 | 1090.29 | 8 | 1 |
+| complex64 | Gob | 992.4 | 16.12 | 1624 | 27 |
+| complex64 | Binary | 56.77 | 281.86 | 16 | 2 |
+| complex128 | Bitbox | 19.88 | 1609.49 | 16 | 1 |
+| complex128 | Gob | 1005 | 31.84 | 1640 | 27 |
+| complex128 | Binary | 62.95 | 508.31 | 32 | 2 |
 # Benchmark Results (Aligned Struct, 4 Fields)
 
 | Benchmark | Codec | ns/op | MB/s | B/op | allocs/op |
 |:----------|:------|------:|-----:|-----:|----------:|
-| EncodeDecodeStructAligned4Fields | Bitbox | 55.57 | 575.85 | 48 | 2 |
-| EncodeDecodeStructAligned4Fields | Gob | 10646.40 | 3.01 | 8416 | 209 |
-| EncodeDecodeStructAligned4Fields | BinaryWriteRead | 300.22 | 106.60 | 224 | 9 |
+| EncodeDecodeStruct | Bitbox | 17.89 | 1788.97 | 0 | 0 |
+| EncodeDecodeStruct | Gob | 10096 | 3.17 | 8128 | 205 |
+| EncodeDecodeStruct | BinaryWriteRead | 226.0 | 141.57 | 64 | 6 |
