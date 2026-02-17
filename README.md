@@ -202,7 +202,7 @@ The benchmark output includes:
 | named_uint32_array_pointer | Gob | 9885 | 3.24 | 7696 | 187 |
 | named_uint32_array_pointer | Binary | 121.8 | 262.69 | 32 | 2 |
 | named_uint32_array_pointer | MsgPack | 388.4 | 82.40 | 160 | 3 |
-# Benchmark Results (Aligned Struct, 4 Fields)
+# Benchmark Results (Aligned Struct)
 
 | Benchmark | Codec | ns/op | MB/s | B/op | allocs/op |
 |:----------|:------|------:|-----:|-----:|----------:|
@@ -210,7 +210,7 @@ The benchmark output includes:
 | EncodeDecodeStruct | Gob | 11382 | 2.81 | 8112 | 204 |
 | EncodeDecodeStruct | BinaryWriteRead | 139.7 | 229.04 | 32 | 2 |
 | EncodeDecodeStruct | MsgPack | 490.9 | 65.19 | 160 | 3 |
-# Benchmark Results (Tx Struct)
+# Benchmark Results (Struct)
 
 | Benchmark | Codec | ns/op | MB/s | B/op | allocs/op |
 |:----------|:------|------:|-----:|-----:|----------:|

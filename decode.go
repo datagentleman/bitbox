@@ -7,63 +7,20 @@ import (
 // Decode objects
 func Decode(buf *Buffer, objects ...any) {
 	for _, obj := range objects {
-		switch val := obj.(type) {
-		// Bytes
-		case *[]byte:
-			l := uint32(0)
-			buf.Decode(&l)
-			*val = append(*val, buf.Next(int(l))...)
-
-		// Basic Pointers
-		case *int:
-			buf.Read(ToBytes(val))
-		case *int8:
-			buf.Read(ToBytes(val))
-		case *int16:
-			buf.Read(ToBytes(val))
-		case *int32:
-			buf.Read(ToBytes(val))
-		case *int64:
-			buf.Read(ToBytes(val))
-		case *uint:
-			buf.Read(ToBytes(val))
-		case *uint8:
-			buf.Read(ToBytes(val))
-		case *uint16:
-			buf.Read(ToBytes(val))
-		case *uint32:
-			buf.Read(ToBytes(val))
-		case *uint64:
-			buf.Read(ToBytes(val))
-		case *float32:
-			buf.Read(ToBytes(val))
-		case *float64:
-			buf.Read(ToBytes(val))
-		case *complex64:
-			buf.Read(ToBytes(val))
-		case *complex128:
-			buf.Read(ToBytes(val))
-		case *uintptr:
-			buf.Read(ToBytes(val))
-		case *bool:
-			buf.Read(ToBytes(val))
-
-		// String
-		case *string:
-			l := uint32(0)
-			buf.Decode(&l)
-			*val = string(buf.Next(int(l)))
-
-		default:
-			v := reflect.ValueOf(obj)
-			v = reflect.Indirect(v)
-
-			if !v.IsValid() {
-				continue
-			}
-
-			decode(buf, v)
+		// Fast path - type cast
+		if decodeFixed(buf, obj) {
+			continue
 		}
+
+		// Slow path - reflections
+		v := reflect.ValueOf(obj)
+		v = reflect.Indirect(v)
+
+		if !v.IsValid() {
+			continue
+		}
+
+		decode(buf, v)
 	}
 }
 
@@ -155,4 +112,58 @@ func decodeSlice(buf *Buffer, val reflect.Value) {
 
 	val.SetLen(n)
 	buf.Read(toBytes(val, int(total)))
+}
+
+func decodeFixed(buf *Buffer, obj any) bool {
+	switch val := obj.(type) {
+	// Bytes
+	case *[]byte:
+		l := uint32(0)
+		buf.Decode(&l)
+		*val = append(*val, buf.Next(int(l))...)
+
+	// Basic Pointers
+	case *int:
+		buf.Read(ToBytes(val))
+	case *int8:
+		buf.Read(ToBytes(val))
+	case *int16:
+		buf.Read(ToBytes(val))
+	case *int32:
+		buf.Read(ToBytes(val))
+	case *int64:
+		buf.Read(ToBytes(val))
+	case *uint:
+		buf.Read(ToBytes(val))
+	case *uint8:
+		buf.Read(ToBytes(val))
+	case *uint16:
+		buf.Read(ToBytes(val))
+	case *uint32:
+		buf.Read(ToBytes(val))
+	case *uint64:
+		buf.Read(ToBytes(val))
+	case *float32:
+		buf.Read(ToBytes(val))
+	case *float64:
+		buf.Read(ToBytes(val))
+	case *complex64:
+		buf.Read(ToBytes(val))
+	case *complex128:
+		buf.Read(ToBytes(val))
+	case *uintptr:
+		buf.Read(ToBytes(val))
+	case *bool:
+		buf.Read(ToBytes(val))
+
+	// String
+	case *string:
+		l := uint32(0)
+		buf.Decode(&l)
+		*val = string(buf.Next(int(l)))
+
+	default:
+		return false
+	}
+	return true
 }

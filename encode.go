@@ -7,7 +7,8 @@ import (
 
 func Encode(buf *Buffer, objects ...any) {
 	for _, obj := range objects {
-		if EncodeBasic(buf, obj) {
+		// Fast path - type cast
+		if encodeFixed(buf, obj) {
 			continue
 		}
 
@@ -18,19 +19,20 @@ func Encode(buf *Buffer, objects ...any) {
 			continue
 		}
 
+		// Slow path - reflections
 		encode(buf, val)
 	}
 }
 
 // Encode POD stucts.
-func EncodePODStruct(buf *Buffer, val reflect.Value) {
+func encodePODStruct(buf *Buffer, val reflect.Value) {
 	size := int(val.Type().Size())
 	buf.Write(toBytes(val, size))
 }
 
 // Encode POD slice. If slice elements are structs,
 // they will be encoded as POD struct (they must be memory aligned).
-func EncodeSlice(buf *Buffer, val reflect.Value) {
+func encodeSlice(buf *Buffer, val reflect.Value) {
 	elem := val.Type().Elem()
 
 	if !isFixedType(elem.Kind()) {
@@ -46,7 +48,7 @@ func EncodeSlice(buf *Buffer, val reflect.Value) {
 
 // Encode array. If array elements are structs,
 // they will be encoded as POD struct (they must be memory aligned).
-func EncodeArray(buf *Buffer, val reflect.Value) {
+func encodeArray(buf *Buffer, val reflect.Value) {
 	elem := val.Type().Elem()
 
 	if !isFixedType(elem.Kind()) {
@@ -113,18 +115,18 @@ func encode(buf *Buffer, val reflect.Value) {
 		buf.Write(toBytes(val, size))
 
 	case reflect.Slice:
-		EncodeSlice(buf, val)
+		encodeSlice(buf, val)
 	case reflect.Array:
-		EncodeArray(buf, val)
+		encodeArray(buf, val)
 	case reflect.String:
-		EncodeBasic(buf, val.String())
+		encodeFixed(buf, val.String())
 	case reflect.Struct:
-		EncodePODStruct(buf, val)
+		encodePODStruct(buf, val)
 	}
 }
 
 // Encode basic types.
-func EncodeBasic(buf *Buffer, obj any) bool {
+func encodeFixed(buf *Buffer, obj any) bool {
 	switch val := obj.(type) {
 	// Values
 	case int8:
@@ -215,6 +217,5 @@ func EncodeBasic(buf *Buffer, obj any) bool {
 	default:
 		return false
 	}
-
 	return true
 }
