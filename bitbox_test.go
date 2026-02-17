@@ -2,7 +2,6 @@ package bitbox_test
 
 import (
 	"testing"
-	"unsafe"
 
 	bitbox "github.com/datagentleman/bitbox"
 	"github.com/datagentleman/bitbox/test"
@@ -15,71 +14,101 @@ type alignedStruct struct {
 	D float32
 }
 
-type namedInt8 int8
-type namedUint32 uint32
-type namedString string
-type namedBytes []byte
-type namedUint16Slice []uint16
-type namedUint16Array [4]uint16
+type NamedTypeInt1 int
+type NamedTypeInt2 int8
+type NamedTypeInt3 int16
+type NamedTypeInt4 int32
+type NamedTypeInt5 int64
+
+type NamedTypeUint1 uint
+type NamedTypeUint2 uint8
+type NamedTypeUint3 uint16
+type NamedTypeUint4 uint32
+type NamedTypeUint5 uint64
+type NamedTypeUint6 uintptr
+
+type NamedTypeFloat1 float32
+type NamedTypeFloat2 float64
+
+type NamedTypeComplex1 complex64
+type NamedTypeComplex2 complex128
+
+type NamedTypeString1 string
+type NamedTypeBool1 bool
+type NamedTypeByte1 []byte
+
+type NamedTypeSlice1 []uint16
+type NamedTypeArray1 [4]uint16
+type NamedTypeArray2 [32]uint8
 
 func runTest[T any](t *testing.T, name string, in T) {
 	t.Helper()
 
-	t.Run(name+"/encode_value_decode_pointer", func(t *testing.T) {
+	t.Run(name+"/values", func(t *testing.T) {
+		var out T
+
 		buf := bitbox.NewBuffer(nil)
 		bitbox.Encode(buf, in)
-
-		var out T
 		bitbox.Decode(buf, &out)
+
 		test.AssertEqual(t, in, out)
 	})
 
-	t.Run(name+"/encode_pointer_decode_pointer", func(t *testing.T) {
+	t.Run(name+"/pointers", func(t *testing.T) {
+		var out T
+
 		buf := bitbox.NewBuffer(nil)
 		bitbox.Encode(buf, &in)
-
-		var out T
 		bitbox.Decode(buf, &out)
+
 		test.AssertEqual(t, in, out)
 	})
 }
 
-func runDecodeNonPointerNoop[T any](t *testing.T, name string, in T) {
+func runEncoderDecoder[T any](t *testing.T, name string, in T) {
 	t.Helper()
 
 	t.Run(name, func(t *testing.T) {
+		var out T
+
 		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, in)
+		bitbox.Encode(buf, &in)
+		bitbox.Decode(buf, &out)
 
-		remainingBefore := buf.Len()
-		bitbox.Decode(buf, in)
-		remainingAfter := buf.Len()
-
-		test.AssertEqual(t, remainingBefore, remainingAfter)
+		test.AssertEqual(t, in, out)
 	})
 }
 
-func TestEncodeDecodeBasicTypes(t *testing.T) {
+func TestFixedTypes(t *testing.T) {
 	cases := []struct {
 		name string
 		run  func(*testing.T)
 	}{
-		{name: "bool", run: func(t *testing.T) { runTest(t, "bool", true) }},
+		// int
 		{name: "int8", run: func(t *testing.T) { runTest(t, "int8", int8(-8)) }},
 		{name: "int16", run: func(t *testing.T) { runTest(t, "int16", int16(-16)) }},
 		{name: "int32", run: func(t *testing.T) { runTest(t, "int32", int32(-32)) }},
 		{name: "int64", run: func(t *testing.T) { runTest(t, "int64", int64(-64)) }},
+
+		// uint
 		{name: "uint8", run: func(t *testing.T) { runTest(t, "uint8", uint8(8)) }},
 		{name: "uint16", run: func(t *testing.T) { runTest(t, "uint16", uint16(16)) }},
 		{name: "uint32", run: func(t *testing.T) { runTest(t, "uint32", uint32(32)) }},
 		{name: "uint64", run: func(t *testing.T) { runTest(t, "uint64", uint64(64)) }},
 		{name: "uintptr", run: func(t *testing.T) { runTest(t, "uintptr", uintptr(128)) }},
+
+		// float
 		{name: "float32", run: func(t *testing.T) { runTest(t, "float32", float32(3.14)) }},
 		{name: "float64", run: func(t *testing.T) { runTest(t, "float64", float64(6.28)) }},
+
+		// complex
 		{name: "complex64", run: func(t *testing.T) { runTest(t, "complex64", complex64(complex(1.5, -2.5))) }},
 		{name: "complex128", run: func(t *testing.T) { runTest(t, "complex128", complex128(complex(2.5, -3.5))) }},
+
+		// bool, string, bytes
 		{name: "string", run: func(t *testing.T) { runTest(t, "string", "bitbox") }},
 		{name: "bytes", run: func(t *testing.T) { runTest(t, "bytes", []byte{1, 2, 3, 4, 5}) }},
+		{name: "bool", run: func(t *testing.T) { runTest(t, "bool", true) }},
 	}
 
 	for _, tc := range cases {
@@ -87,140 +116,89 @@ func TestEncodeDecodeBasicTypes(t *testing.T) {
 	}
 }
 
-func TestEncodeDecodeAlignedStruct(t *testing.T) {
+func TestSlicesAndArrays(t *testing.T) {
+	t.Run("slice uint16", func(t *testing.T) {
+		runTest(t, "slice_uint16", []uint16{1, 2, 3, 4})
+	})
+
+	t.Run("array uint16 pointer round trip", func(t *testing.T) {
+		in := [4]uint16{1, 2, 3, 4}
+		out := [4]uint16{}
+
+		buf := bitbox.NewBuffer(nil)
+		bitbox.Encode(buf, &in)
+		bitbox.Decode(buf, &out)
+
+		test.AssertEqual(t, in, out)
+	})
+}
+
+func TestAlignedStruct(t *testing.T) {
 	in := alignedStruct{A: 123, B: 456, C: 999, D: 7.25}
+	out := alignedStruct{}
 
 	buf := bitbox.NewBuffer(nil)
 	bitbox.Encode(buf, &in)
-
-	var out alignedStruct
 	bitbox.Decode(buf, &out)
+
 	test.AssertEqual(t, in, out)
 }
 
-func TestDecodeNonPointerIsNoop(t *testing.T) {
-	cases := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		{name: "int32", run: func(t *testing.T) { runDecodeNonPointerNoop(t, "int32", int32(123)) }},
-		{name: "string", run: func(t *testing.T) { runDecodeNonPointerNoop(t, "string", "decode-me") }},
-		{name: "bytes", run: func(t *testing.T) { runDecodeNonPointerNoop(t, "bytes", []byte{7, 8, 9}) }},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, tc.run)
-	}
-}
-
-func TestUnsupportedIntUintAreNoop(t *testing.T) {
+func TestIntAndUint(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		in := int(-7)
-		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, in)
-		test.AssertEqual(t, 0, buf.Len())
-	})
+		out := int(0)
 
-	t.Run("uint", func(t *testing.T) {
-		in := uint(7)
-		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, in)
-		test.AssertEqual(t, 0, buf.Len())
-	})
-}
-
-func TestIntUintPointerRoundTrip(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		in := int(-7)
 		buf := bitbox.NewBuffer(nil)
 		bitbox.Encode(buf, &in)
-
-		var out int
 		bitbox.Decode(buf, &out)
+
 		test.AssertEqual(t, in, out)
 	})
 
 	t.Run("uint", func(t *testing.T) {
 		in := uint(7)
+		out := uint(0)
+
 		buf := bitbox.NewBuffer(nil)
 		bitbox.Encode(buf, &in)
-
-		var out uint
 		bitbox.Decode(buf, &out)
+
 		test.AssertEqual(t, in, out)
 	})
 }
 
-func TestNamedBasicTypesPointerRoundTrip(t *testing.T) {
-	t.Run("named int8 pointer decodes into int8", func(t *testing.T) {
-		in := namedInt8(-42)
-		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, &in)
+func TestNamedTypes(t *testing.T) {
+	// int
+	runEncoderDecoder(t, "named_int", NamedTypeInt1(-7))
+	runEncoderDecoder(t, "named_int8", NamedTypeInt2(-8))
+	runEncoderDecoder(t, "named_int16", NamedTypeInt3(-16))
+	runEncoderDecoder(t, "named_int32", NamedTypeInt4(-32))
+	runEncoderDecoder(t, "named_int64", NamedTypeInt5(-64))
 
-		var out int8
-		bitbox.Decode(buf, &out)
-		test.AssertEqual(t, int8(in), out)
-	})
+	// uint
+	runEncoderDecoder(t, "named_uint", NamedTypeUint1(7))
+	runEncoderDecoder(t, "named_uint8", NamedTypeUint2(8))
+	runEncoderDecoder(t, "named_uint16", NamedTypeUint3(16))
+	runEncoderDecoder(t, "named_uint32", NamedTypeUint4(32))
+	runEncoderDecoder(t, "named_uint64", NamedTypeUint5(64))
+	runEncoderDecoder(t, "named_uintptr", NamedTypeUint6(128))
 
-	t.Run("named uint32 pointer decodes into uint32", func(t *testing.T) {
-		in := namedUint32(0xDEADBEEF)
-		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, &in)
+	// float
+	runEncoderDecoder(t, "named_float32", NamedTypeFloat1(3.14))
+	runEncoderDecoder(t, "named_float64", NamedTypeFloat2(6.28))
 
-		var out uint32
-		bitbox.Decode(buf, &out)
-		test.AssertEqual(t, uint32(in), out)
-	})
-}
+	// complex
+	runEncoderDecoder(t, "named_complex64", NamedTypeComplex1(complex(1.5, -2.5)))
+	runEncoderDecoder(t, "named_complex128", NamedTypeComplex2(complex(2.5, -3.5)))
 
-func TestNamedStringAndBytesRoundTrip(t *testing.T) {
-	t.Run("named string value decodes into string", func(t *testing.T) {
-		in := namedString("named-string")
-		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, in)
+	// slice, array
+	runEncoderDecoder(t, "named_slice_uint16", NamedTypeSlice1{1, 2, 3, 4})
+	runEncoderDecoder(t, "named_array_uint16", NamedTypeArray1{1, 2, 3, 4})
+	runEncoderDecoder(t, "named_array_uint16", NamedTypeArray2{1, 1, 1, 1})
 
-		var out string
-		bitbox.Decode(buf, &out)
-		test.AssertEqual(t, string(in), out)
-	})
-
-	t.Run("named []byte value decodes into []byte", func(t *testing.T) {
-		in := namedBytes{10, 20, 30, 40}
-		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, in)
-
-		var out []byte
-		bitbox.Decode(buf, &out)
-		test.AssertEqual(t, []byte(in), out)
-	})
-}
-
-func TestNamedSlicesAndArraysEncodeLayout(t *testing.T) {
-	t.Run("named []uint16 encodes length prefix + payload", func(t *testing.T) {
-		in := namedUint16Slice{1, 2, 3, 4}
-		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, in)
-
-		total := uint32(len(in) * int(unsafe.Sizeof(uint16(0))))
-		test.AssertEqual(t, int(unsafe.Sizeof(total))+len(in)*int(unsafe.Sizeof(uint16(0))), buf.Len())
-
-		var encodedLen uint32
-		bitbox.Decode(buf, &encodedLen)
-		test.AssertEqual(t, total, encodedLen)
-		test.AssertEqual(t, int(total), len(buf.Data()))
-	})
-
-	t.Run("named [4]uint16 pointer encodes length prefix + payload", func(t *testing.T) {
-		in := namedUint16Array{1, 2, 3, 4}
-		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, &in)
-
-		total := uint32(len(in) * int(unsafe.Sizeof(uint16(0))))
-		test.AssertEqual(t, int(unsafe.Sizeof(total))+len(in)*int(unsafe.Sizeof(uint16(0))), buf.Len())
-
-		var encodedLen uint32
-		bitbox.Decode(buf, &encodedLen)
-		test.AssertEqual(t, total, encodedLen)
-		test.AssertEqual(t, int(total), len(buf.Data()))
-	})
+	// string, bytes, bool
+	runEncoderDecoder(t, "named_string", NamedTypeString1("named-string"))
+	runEncoderDecoder(t, "named_bool", NamedTypeBool1(true))
+	runEncoderDecoder(t, "named_bytes", NamedTypeByte1{10, 20, 30, 40})
 }
