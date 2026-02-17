@@ -53,7 +53,7 @@ func EncodeNamedType(buf *Buffer, val reflect.Value) {
 	case reflect.String:
 		EncodeBasic(buf, val.String())
 	default:
-		if isPOD(kind) {
+		if isFixedType(kind) {
 			size := int(val.Type().Size())
 			buf.Write(toBytes(val, size))
 		}
@@ -65,7 +65,7 @@ func EncodeNamedType(buf *Buffer, val reflect.Value) {
 func EncodeSlice(buf *Buffer, val reflect.Value) {
 	elem := val.Type().Elem()
 
-	if !isPOD(elem.Kind()) && !isStruct(elem.Kind()) {
+	if !isFixedType(elem.Kind()) && !isStruct(elem.Kind()) {
 		return
 	}
 
@@ -81,15 +81,66 @@ func EncodeSlice(buf *Buffer, val reflect.Value) {
 func EncodeArray(buf *Buffer, val reflect.Value) {
 	elem := val.Type().Elem()
 
-	if !isPOD(elem.Kind()) && !isStruct(elem.Kind()) {
+	if !isFixedType(elem.Kind()) && !isStruct(elem.Kind()) {
 		return
 	}
 
 	size := int(elem.Size())
 	total := uint32(val.Len() * size)
 
-	buf.Write(ToBytes(&total))
+	// Arrays pass by value are not addressable, so we must
+	// make it addresable by creating new array and copy the old one.
+	if !val.CanAddr() {
+		cpy := reflect.New(val.Type()).Elem()
+		cpy.Set(val)
+		val = cpy
+	}
+
 	buf.Write(toBytes(val, int(total)))
+}
+
+func EncodeStruct(buf *Buffer, objects ...any) {
+	for _, obj := range objects {
+		val := reflect.ValueOf(obj)
+		val = reflect.Indirect(val)
+
+		if val.Kind() != reflect.Struct {
+			continue
+		}
+
+		for i := 0; i < val.NumField(); i++ {
+			field := val.Field(i)
+			kind := field.Kind()
+
+			if kind == reflect.Pointer {
+				ptrFlag := uint8(0)
+
+				if field.IsNil() {
+					buf.Write(ToBytes(&ptrFlag))
+					continue
+				}
+
+				ptrFlag = 1
+				buf.Write(ToBytes(&ptrFlag))
+				field = reflect.Indirect(field)
+			}
+
+			kind = field.Kind()
+			switch kind {
+			case reflect.Slice:
+				EncodeSlice(buf, field)
+			case reflect.Array:
+				EncodeArray(buf, field)
+			case reflect.String:
+				EncodeBasic(buf, field.String())
+			default:
+				if isFixedType(kind) {
+					size := int(field.Type().Size())
+					buf.Write(toBytes(field, size))
+				}
+			}
+		}
+	}
 }
 
 // Encode basic types.

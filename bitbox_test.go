@@ -41,6 +41,17 @@ type NamedTypeSlice1 []uint16
 type NamedTypeArray1 [4]uint16
 type NamedTypeArray2 [32]uint8
 
+type Tx struct {
+	ChainID    *uint64
+	Nonce      uint64
+	GasPrice   *uint64
+	Gas        uint64
+	To         *NamedTypeArray2
+	Value      *uint64
+	Data       []byte
+	AccessList NamedTypeSlice1
+}
+
 func runTest[T any](t *testing.T, name string, in T) {
 	t.Helper()
 
@@ -116,21 +127,12 @@ func TestFixedTypes(t *testing.T) {
 	}
 }
 
-func TestSlicesAndArrays(t *testing.T) {
-	t.Run("slice uint16", func(t *testing.T) {
-		runTest(t, "slice_uint16", []uint16{1, 2, 3, 4})
-	})
+func TestSlices(t *testing.T) {
+	runTest(t, "slice_uint16", []uint16{1, 2, 3, 4})
+}
 
-	t.Run("array uint16 pointer round trip", func(t *testing.T) {
-		in := [4]uint16{1, 2, 3, 4}
-		out := [4]uint16{}
-
-		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, &in)
-		bitbox.Decode(buf, &out)
-
-		test.AssertEqual(t, in, out)
-	})
+func TestArrays(t *testing.T) {
+	runTest(t, "array_uint16", [4]uint16{1, 2, 3, 4})
 }
 
 func TestAlignedStruct(t *testing.T) {
@@ -142,6 +144,49 @@ func TestAlignedStruct(t *testing.T) {
 	bitbox.Decode(buf, &out)
 
 	test.AssertEqual(t, in, out)
+}
+
+func TestStruct(t *testing.T) {
+	t.Run("nil pointers", func(t *testing.T) {
+		in := Tx{
+			Nonce:      7,
+			Gas:        21000,
+			Data:       []byte{1, 2, 3},
+			AccessList: NamedTypeSlice1{4, 5, 6},
+		}
+		out := Tx{}
+
+		buf := bitbox.NewBuffer(nil)
+		bitbox.Encode(buf, &in)
+		bitbox.Decode(buf, &out)
+
+		test.AssertEqual(t, in, out)
+	})
+
+	t.Run("with pointers", func(t *testing.T) {
+		chainID := uint64(11155111)
+		gasPrice := uint64(20_000_000_000)
+		value := uint64(12345)
+		to := NamedTypeArray2{}
+
+		in := Tx{
+			ChainID:    &chainID,
+			Nonce:      42,
+			GasPrice:   &gasPrice,
+			Gas:        21000,
+			To:         &to,
+			Value:      &value,
+			Data:       []byte{9, 8, 7, 6},
+			AccessList: NamedTypeSlice1{1, 3, 5, 7},
+		}
+		out := Tx{}
+
+		buf := bitbox.NewBuffer(nil)
+		bitbox.Encode(buf, &in)
+		bitbox.Decode(buf, &out)
+
+		test.AssertEqual(t, in, out)
+	})
 }
 
 func TestIntAndUint(t *testing.T) {

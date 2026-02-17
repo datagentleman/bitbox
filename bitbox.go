@@ -29,8 +29,8 @@ func toBytes(val reflect.Value, size int) []byte {
 	return unsafe.Slice((*byte)(ptr), size)
 }
 
-// Detect if value is POD type.
-func isPOD(kind reflect.Kind) bool {
+// Detect if value is fixed type.
+func isFixedType(kind reflect.Kind) bool {
 	switch kind {
 	case
 		reflect.Bool, reflect.Uintptr, reflect.Int, reflect.Int8, reflect.Int16,
@@ -46,4 +46,9 @@ func isPOD(kind reflect.Kind) bool {
 
 func isStruct(kind reflect.Kind) bool {
 	return kind == reflect.Struct
+}
+
+// Make slice of given type and size.
+func MakeSlice(typ reflect.Type, size int) reflect.Value {
+	return reflect.MakeSlice(typ, 0, size)
 }
