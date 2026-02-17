@@ -14,6 +14,12 @@ Bitbox is a tiny, extremely fast, low-overhead binary encoding/decoding package 
 It provides a universal byte format where data can be easily moved across different languages and platforms,
 as long as all systems use the same endianness.
 
+# Currently we are faster and more memory efficient than
+
+ | MsgPack | Binary | Gob |
+ |:-------:|:------:|:---:|
+ |   ✅    |   ✅   | ✅  |
+
 # ⚠️ Endianness warning
 
 Bitbox writes/read all data using the machine’s native endianness (typically little-endian).
@@ -25,7 +31,7 @@ To ensure correct decoding, both encoder and decoder must run on platforms with 
 * add support for nested slices
 * add support for nested arrays
 * add generic functions
-* examples
+* add examples
 * clean code
 * clean tests
 * clean benchmarks
