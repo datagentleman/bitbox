@@ -13,15 +13,37 @@ func ToBytes[T any](obj *T) []byte {
 	return unsafe.Slice((*byte)(unsafe.Pointer(obj)), size)
 }
 
-// Get pointer from reflect.Value and cast it to []byte.
-// Value must be addressable.
-func toBytes(val reflect.Value) []byte {
+// Get pointer from val and cast it to []byte.
+func toBytes(val reflect.Value, size int) []byte {
+	// Slices are treated differently, we cannot take UnsafeAddr from them.
+	if val.Kind() == reflect.Slice {
+		dataPtr := unsafe.Pointer(val.Pointer())
+		return unsafe.Slice((*byte)(dataPtr), size)
+	}
+
 	if !val.CanAddr() {
-		panic("value is not addressable")
+		return nil
 	}
 
 	ptr := unsafe.Pointer(val.UnsafeAddr())
-	size := val.Type().Size()
-
 	return unsafe.Slice((*byte)(ptr), size)
+}
+
+// Detect if value is POD type.
+func isPOD(kind reflect.Kind) bool {
+	switch kind {
+	case
+		reflect.Bool, reflect.Uintptr, reflect.Int, reflect.Int8, reflect.Int16,
+		reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16,
+		reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64,
+		reflect.Complex64, reflect.Complex128:
+
+		return true
+	default:
+		return false
+	}
+}
+
+func isStruct(kind reflect.Kind) bool {
+	return kind == reflect.Struct
 }
