@@ -14,7 +14,7 @@ func Decode(buf *Buffer, objects ...any) {
 			buf.Decode(&l)
 			*val = append(*val, buf.Next(int(l))...)
 
-		// Basic Types
+		// Basic Pointers
 		case *int:
 			buf.Read(ToBytes(val))
 		case *int8:
@@ -76,9 +76,9 @@ func Decode(buf *Buffer, objects ...any) {
 
 func DecodeAlignedStruct(buf *Buffer, val reflect.Value) bool {
 	if val.Kind() == reflect.Struct {
-		buf.Read(toBytes(val))
+		size := int(val.Type().Size())
+		buf.Read(toBytes(val, size))
 		return true
 	}
-
 	return false
 }
