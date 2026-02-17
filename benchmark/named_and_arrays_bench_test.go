@@ -401,12 +401,15 @@ func runMsgPackRoundTrip(b *testing.B, in any, out any, verify func()) {
 		}
 	}()
 
-	wire, err := msgpack.Marshal(in)
-	if err != nil {
+	wire := bytes.NewBuffer(nil)
+	enc := msgpack.NewEncoder(wire)
+	dec := msgpack.NewDecoder(wire)
+
+	if err := enc.Encode(in); err != nil {
 		b.Skipf("msgpack unsupported type %T: %v", in, err)
 		return
 	}
-	if err := msgpack.Unmarshal(wire, out); err != nil {
+	if err := dec.Decode(out); err != nil {
 		b.Skipf("msgpack decode unsupported type %T: %v", in, err)
 		return
 	}
@@ -414,12 +417,12 @@ func runMsgPackRoundTrip(b *testing.B, in any, out any, verify func()) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		wire, err := msgpack.Marshal(in)
-		if err != nil {
+		wire.Reset()
+		if err := enc.Encode(in); err != nil {
 			b.Skipf("msgpack unsupported type %T: %v", in, err)
 			return
 		}
-		if err := msgpack.Unmarshal(wire, out); err != nil {
+		if err := dec.Decode(out); err != nil {
 			b.Skipf("msgpack decode unsupported type %T: %v", in, err)
 			return
 		}

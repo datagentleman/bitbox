@@ -112,11 +112,14 @@ func benchmarkStructMsgPack(b *testing.B, in aligned4Fields) {
 	b.SetBytes(aligned4FieldsSizeBytes * 2)
 	b.ReportAllocs()
 
-	wire, err := msgpack.Marshal(&in)
-	if err != nil {
+	wire := bytes.NewBuffer(nil)
+	enc := msgpack.NewEncoder(wire)
+	dec := msgpack.NewDecoder(wire)
+
+	if err := enc.Encode(&in); err != nil {
 		b.Fatalf("%v", err)
 	}
-	if err := msgpack.Unmarshal(wire, &out); err != nil {
+	if err := dec.Decode(&out); err != nil {
 		b.Fatalf("%v", err)
 	}
 	test.AssertEqual(b, in, out)
@@ -124,11 +127,11 @@ func benchmarkStructMsgPack(b *testing.B, in aligned4Fields) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		wire, err := msgpack.Marshal(&in)
-		if err != nil {
+		wire.Reset()
+		if err := enc.Encode(&in); err != nil {
 			b.Fatalf("%v", err)
 		}
-		if err := msgpack.Unmarshal(wire, &out); err != nil {
+		if err := dec.Decode(&out); err != nil {
 			b.Fatalf("%v", err)
 		}
 	}

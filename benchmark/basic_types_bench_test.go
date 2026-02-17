@@ -190,12 +190,15 @@ func benchmarkTypesMsgPack[T any](b *testing.B, in T, setBytes int64) {
 	b.SetBytes(setBytes)
 	b.ReportAllocs()
 
-	wire, err := msgpack.Marshal(in)
-	if err != nil {
+	wire := bytes.NewBuffer(nil)
+	enc := msgpack.NewEncoder(wire)
+	dec := msgpack.NewDecoder(wire)
+
+	if err := enc.Encode(in); err != nil {
 		b.Skipf("msgpack unsupported type %T: %v", in, err)
 		return
 	}
-	if err := msgpack.Unmarshal(wire, &out); err != nil {
+	if err := dec.Decode(&out); err != nil {
 		b.Skipf("msgpack decode unsupported type %T: %v", in, err)
 		return
 	}
@@ -204,13 +207,13 @@ func benchmarkTypesMsgPack[T any](b *testing.B, in T, setBytes int64) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
+		wire.Reset()
 		out = zero
-		wire, err := msgpack.Marshal(in)
-		if err != nil {
+		if err := enc.Encode(in); err != nil {
 			b.Skipf("msgpack unsupported type %T: %v", in, err)
 			return
 		}
-		if err := msgpack.Unmarshal(wire, &out); err != nil {
+		if err := dec.Decode(&out); err != nil {
 			b.Skipf("msgpack decode unsupported type %T: %v", in, err)
 			return
 		}

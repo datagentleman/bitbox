@@ -12,6 +12,7 @@ func Encode(buf *Buffer, objects ...any) {
 			continue
 		}
 
+		// Slow path - reflections
 		val := reflect.ValueOf(obj)
 		val = reflect.Indirect(val)
 
@@ -19,15 +20,8 @@ func Encode(buf *Buffer, objects ...any) {
 			continue
 		}
 
-		// Slow path - reflections
 		encode(buf, val)
 	}
-}
-
-// Encode POD stucts.
-func encodePODStruct(buf *Buffer, val reflect.Value) {
-	size := int(val.Type().Size())
-	buf.Write(toBytes(val, size))
 }
 
 // Encode POD slice. If slice elements are structs,
@@ -121,7 +115,8 @@ func encode(buf *Buffer, val reflect.Value) {
 	case reflect.String:
 		encodeFixed(buf, val.String())
 	case reflect.Struct:
-		encodePODStruct(buf, val)
+		size := int(val.Type().Size())
+		buf.Write(toBytes(val, size))
 	}
 }
 
