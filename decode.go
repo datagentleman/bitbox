@@ -7,8 +7,6 @@ import (
 // Decode objects
 func Decode(buf *Buffer, objects ...any) {
 	for _, obj := range objects {
-		decoded := true
-
 		switch val := obj.(type) {
 		// Bytes
 		case *[]byte:
@@ -54,41 +52,45 @@ func Decode(buf *Buffer, objects ...any) {
 		case *string:
 			l := uint32(0)
 			buf.Decode(&l)
-
 			*val = string(buf.Next(int(l)))
+
 		default:
-			decoded = false
-		}
+			v := reflect.ValueOf(obj)
+			v = reflect.Indirect(v)
 
-		// Decode didn't decode anything, lets try with reflections.
-		if !decoded {
-			val := reflect.ValueOf(obj)
-
-			if val.Kind() != reflect.Pointer {
+			if !v.IsValid() {
 				continue
 			}
 
-			val = reflect.Indirect(val)
-
-			if !val.IsValid() {
-				continue
-			}
-
-			switch val.Kind() {
-			case reflect.Slice:
-				decodeSlice(buf, val)
-			case reflect.Array:
-				decodeArray(buf, val)
-			case reflect.Struct:
-				decodePOD(buf, val)
-			case reflect.String:
-				decodeString(buf, val)
-			default:
-				if isFixedType(val.Kind()) {
-					decodeFixed(buf, val)
-				}
-			}
+			decode(buf, v)
 		}
+	}
+}
+
+func decode(buf *Buffer, val reflect.Value) {
+	switch val.Kind() {
+	case
+		reflect.Bool, reflect.Uintptr, reflect.Int, reflect.Int8, reflect.Int16,
+		reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16,
+		reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64,
+		reflect.Complex64, reflect.Complex128:
+
+		size := int(val.Type().Size())
+		buf.Read(toBytes(val, size))
+
+	case reflect.Slice:
+		decodeSlice(buf, val)
+	case reflect.Array:
+		decodeArray(buf, val)
+
+	case reflect.Struct:
+		size := int(val.Type().Size())
+		buf.Read(toBytes(val, size))
+
+	case reflect.String:
+		l := uint32(0)
+		buf.Decode(&l)
+		val.SetString(string(buf.Next(int(l))))
 	}
 }
 
@@ -125,24 +127,12 @@ func DecodeStruct(buf *Buffer, objects ...any) {
 				field = field.Elem()
 			}
 
-			switch field.Kind() {
-			case reflect.Slice:
-				decodeSlice(buf, field)
-			case reflect.Array:
-				decodeArray(buf, field)
-			case reflect.String:
-				decodeString(buf, field)
-			default:
-				if isFixedType(field.Kind()) {
-					size := int(field.Type().Size())
-					buf.Read(toBytes(field, size))
-				}
-			}
+			decode(buf, field)
 		}
 	}
 }
 
-// Decode arrays - reflect style.
+// Decode arrays.
 func decodeArray(buf *Buffer, val reflect.Value) {
 	elem := val.Type().Elem()
 	total := val.Len() * int(elem.Size())
@@ -150,7 +140,7 @@ func decodeArray(buf *Buffer, val reflect.Value) {
 	buf.Read(toBytes(val, int(total)))
 }
 
-// Decode slices - reflect style.
+// Decode slices.
 func decodeSlice(buf *Buffer, val reflect.Value) {
 	elem := val.Type().Elem()
 	tsize := uint32(elem.Size())
@@ -165,20 +155,4 @@ func decodeSlice(buf *Buffer, val reflect.Value) {
 
 	val.SetLen(n)
 	buf.Read(toBytes(val, int(total)))
-}
-
-func decodePOD(buf *Buffer, val reflect.Value) {
-	size := int(val.Type().Size())
-	buf.Read(toBytes(val, size))
-}
-
-func decodeString(buf *Buffer, val reflect.Value) {
-	l := uint32(0)
-	buf.Decode(&l)
-	val.SetString(string(buf.Next(int(l))))
-}
-
-func decodeFixed(buf *Buffer, val reflect.Value) {
-	size := int(val.Type().Size())
-	buf.Read(toBytes(val, size))
 }

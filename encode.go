@@ -18,16 +18,7 @@ func Encode(buf *Buffer, objects ...any) {
 			continue
 		}
 
-		switch val.Kind() {
-		case reflect.Slice:
-			EncodeSlice(buf, val)
-		case reflect.Array:
-			EncodeArray(buf, val)
-		case reflect.Struct:
-			EncodePODStruct(buf, val)
-		default:
-			EncodeNamedType(buf, val)
-		}
+		encode(buf, val)
 	}
 }
 
@@ -37,35 +28,12 @@ func EncodePODStruct(buf *Buffer, val reflect.Value) {
 	buf.Write(toBytes(val, size))
 }
 
-// Encode named types.
-func EncodeNamedType(buf *Buffer, val reflect.Value) {
-	kind := val.Kind()
-
-	if !val.IsValid() || val.Type().Name() == "" {
-		return
-	}
-
-	switch kind {
-	case reflect.Slice:
-		EncodeSlice(buf, val)
-	case reflect.Array:
-		EncodeArray(buf, val)
-	case reflect.String:
-		EncodeBasic(buf, val.String())
-	default:
-		if isFixedType(kind) {
-			size := int(val.Type().Size())
-			buf.Write(toBytes(val, size))
-		}
-	}
-}
-
 // Encode POD slice. If slice elements are structs,
 // they will be encoded as POD struct (they must be memory aligned).
 func EncodeSlice(buf *Buffer, val reflect.Value) {
 	elem := val.Type().Elem()
 
-	if !isFixedType(elem.Kind()) && !isStruct(elem.Kind()) {
+	if !isFixedType(elem.Kind()) {
 		return
 	}
 
@@ -76,12 +44,12 @@ func EncodeSlice(buf *Buffer, val reflect.Value) {
 	buf.Write(toBytes(val, int(total)))
 }
 
-// Encode slice. If slice elements are structs,
+// Encode array. If array elements are structs,
 // they will be encoded as POD struct (they must be memory aligned).
 func EncodeArray(buf *Buffer, val reflect.Value) {
 	elem := val.Type().Elem()
 
-	if !isFixedType(elem.Kind()) && !isStruct(elem.Kind()) {
+	if !isFixedType(elem.Kind()) {
 		return
 	}
 
@@ -125,21 +93,33 @@ func EncodeStruct(buf *Buffer, objects ...any) {
 				field = reflect.Indirect(field)
 			}
 
-			kind = field.Kind()
-			switch kind {
-			case reflect.Slice:
-				EncodeSlice(buf, field)
-			case reflect.Array:
-				EncodeArray(buf, field)
-			case reflect.String:
-				EncodeBasic(buf, field.String())
-			default:
-				if isFixedType(kind) {
-					size := int(field.Type().Size())
-					buf.Write(toBytes(field, size))
-				}
-			}
+			encode(buf, field)
 		}
+	}
+}
+
+// This also handle named types.
+func encode(buf *Buffer, val reflect.Value) {
+	kind := val.Kind()
+
+	switch kind {
+	case
+		reflect.Bool, reflect.Uintptr, reflect.Int, reflect.Int8, reflect.Int16,
+		reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16,
+		reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64,
+		reflect.Complex64, reflect.Complex128:
+
+		size := int(val.Type().Size())
+		buf.Write(toBytes(val, size))
+
+	case reflect.Slice:
+		EncodeSlice(buf, val)
+	case reflect.Array:
+		EncodeArray(buf, val)
+	case reflect.String:
+		EncodeBasic(buf, val.String())
+	case reflect.Struct:
+		EncodePODStruct(buf, val)
 	}
 }
 
