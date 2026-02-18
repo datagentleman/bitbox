@@ -20,21 +20,22 @@ as long as all systems use the same endianness.
  |:-------:|:------:|:---:|
  |   ✅    |   ✅   | ✅  |
 
-# ⚠️ Endianness warning
+# Endianness warning
 
 Bitbox writes/read all data using the machine’s native endianness (typically little-endian).
 To ensure correct decoding, both encoder and decoder must run on platforms with the same endianness.
 
 # Things to do
 
-* add support for Maps
 * add support for nested slices
 * add support for nested arrays
-* add generic functions
+* add support for slices with non fixed values
+* add support for arrays with non fixed values
+* add support for Maps
 * add examples
 * clean code
 * clean tests
-* clean benchmarks
+* clean benchmarks (0/5)
 
 # Run Tests
 

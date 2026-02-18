@@ -34,9 +34,10 @@ func encodeSlice(buf *Buffer, val reflect.Value) {
 	}
 
 	size := int(elem.Size())
-	total := uint32(val.Len() * size)
+	num := uint32(val.Len())
+	total := num * uint32(size)
 
-	buf.Write(ToBytes(&total))
+	buf.Write(ToBytes(&num))
 	buf.Write(toBytes(val, int(total)))
 }
 

@@ -102,15 +102,16 @@ func decodeSlice(buf *Buffer, val reflect.Value) {
 	elem := val.Type().Elem()
 	tsize := uint32(elem.Size())
 
-	total := uint32(0)
-	buf.Decode(&total)
+	num := uint32(0)
+	buf.Decode(&num)
 
-	n := int(total / tsize)
-	if val.Cap() < n {
-		val.Set(MakeSlice(val.Type(), n))
+	if val.Cap() < int(num) {
+		val.Set(MakeSlice(val.Type(), int(num)))
 	}
 
-	val.SetLen(n)
+	val.SetLen(int(num))
+
+	total := int(num * tsize)
 	buf.Read(toBytes(val, int(total)))
 }
 

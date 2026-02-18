@@ -118,6 +118,7 @@ func benchmarkTypesBitbox[T any](b *testing.B, in T, setBytes int64) {
 func benchmarkTypesGob[T any](b *testing.B, in T, setBytes int64) {
 	var out T
 	var zero T
+
 	b.SetBytes(setBytes)
 	b.ReportAllocs()
 
