@@ -37,7 +37,7 @@ func isFixedType(kind reflect.Kind) bool {
 		reflect.Bool, reflect.Uintptr, reflect.Int, reflect.Int8, reflect.Int16,
 		reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16,
 		reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64,
-		reflect.Complex64, reflect.Complex128, reflect.Struct:
+		reflect.Complex64, reflect.Complex128:
 
 		return true
 	default:
@@ -51,5 +51,26 @@ func isStruct(kind reflect.Kind) bool {
 
 // Make slice of given type and size.
 func MakeSlice(typ reflect.Type, size int) reflect.Value {
-	return reflect.MakeSlice(typ, 0, size)
+	s := reflect.MakeSlice(typ, 0, size)
+	return s
+}
+
+// Make value addressable.
+func addressable(val reflect.Value) reflect.Value {
+	if val.CanAddr() {
+		return val
+	}
+
+	tmp := reflect.New(val.Type()).Elem()
+	tmp.Set(val)
+	return tmp
+}
+
+// Ensure that slice has enough space for given number of elements.
+func ensureLen(val reflect.Value, num int) {
+	if val.Cap() < num {
+		val.Set(MakeSlice(val.Type(), num))
+	}
+
+	val.SetLen(num)
 }

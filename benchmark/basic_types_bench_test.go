@@ -106,7 +106,6 @@ func benchmarkTypesBitbox[T any](b *testing.B, in T, setBytes int64) {
 	test.AssertEqual(b, in, out)
 
 	b.ResetTimer()
-
 	for i := 0; i < b.N; i++ {
 		buf.Clear()
 		out = zero
@@ -206,7 +205,6 @@ func benchmarkTypesMsgPack[T any](b *testing.B, in T, setBytes int64) {
 	test.AssertEqual(b, in, out)
 
 	b.ResetTimer()
-
 	for i := 0; i < b.N; i++ {
 		wire.Reset()
 		out = zero

@@ -129,10 +129,30 @@ func TestFixedTypes(t *testing.T) {
 
 func TestSlices(t *testing.T) {
 	runTest(t, "slice_uint16", []uint16{1, 2, 3, 4})
+	runTest(t, "slice_slice_byte", [][]byte{{1, 2, 3}, nil, {4, 5, 6, 7}})
+	runTest(t, "slice_slice_slice_uint64", [][][]uint64{{{1, 2}, nil, {3, 4, 5}}, nil, {{6}, {7, 8, 9}}})
 }
 
 func TestArrays(t *testing.T) {
-	runTest(t, "array_uint16", [4]uint16{1, 2, 3, 4})
+	runTest(t, "array", [4]uint16{1, 2, 3, 4})
+
+	inByte := [32][32]byte{}
+	for i := range inByte {
+		for j := range inByte[i] {
+			inByte[i][j] = byte((i + j) % 256)
+		}
+	}
+	runTest(t, "2_nested_arrays", inByte)
+
+	inU32 := [20][20][20]uint32{}
+	for i := range inU32 {
+		for j := range inU32[i] {
+			for k := range inU32[i][j] {
+				inU32[i][j][k] = uint32(i*10000 + j*100 + k)
+			}
+		}
+	}
+	runTest(t, "3_nested_arrays", inU32)
 }
 
 func TestAlignedStruct(t *testing.T) {

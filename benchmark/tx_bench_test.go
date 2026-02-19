@@ -60,7 +60,6 @@ func benchmarkTxBitbox(b *testing.B, in tx) {
 		buf.Clear()
 		bitbox.Encode(buf, &in)
 		bitbox.Decode(buf, &out)
-
 		test.AssertEqual(b, in, out)
 	}
 }
@@ -98,10 +97,8 @@ func benchmarkTxMsgPack(b *testing.B, in tx) {
 
 	for i := 0; i < b.N; i++ {
 		wire.Reset()
-
 		enc.Encode(&in)
 		dec.Decode(&out)
-
 		test.AssertEqual(b, in, out)
 	}
 }

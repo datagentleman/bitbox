@@ -256,46 +256,33 @@ var namedBenchCases = func() []namedBenchCase {
 
 func runBitboxRoundTrip(b *testing.B, in any, out any, verify func()) {
 	buf := bitbox.NewBuffer(nil)
-	bitbox.Encode(buf, in)
-	bitbox.Decode(buf, out)
-	verify()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		buf.Clear()
 		bitbox.Encode(buf, in)
 		bitbox.Decode(buf, out)
+
+		verify()
 	}
 }
 
 func runBitboxLenPrefixPayload(b *testing.B, in any, expectedLen uint32) {
 	buf := bitbox.NewBuffer(nil)
 	var encodedLen uint32
-	bitbox.Encode(buf, in)
-	bitbox.Decode(buf, &encodedLen)
-	test.AssertEqual(b, expectedLen, encodedLen)
-	buf.Consume(int(encodedLen))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		buf.Clear()
 		bitbox.Encode(buf, in)
 		bitbox.Decode(buf, &encodedLen)
-		buf.Consume(int(encodedLen))
+
+		test.AssertEqual(b, expectedLen, encodedLen)
 	}
 }
 
 func runGobRoundTrip(b *testing.B, in any, out any, verify func()) {
 	var wire bytes.Buffer
-	enc := gob.NewEncoder(&wire)
-	if err := enc.Encode(in); err != nil {
-		b.Fatalf("%v", err)
-	}
-	dec := gob.NewDecoder(bytes.NewReader(wire.Bytes()))
-	if err := dec.Decode(out); err != nil {
-		b.Fatalf("%v", err)
-	}
-	verify()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -308,20 +295,14 @@ func runGobRoundTrip(b *testing.B, in any, out any, verify func()) {
 		if err := dec.Decode(out); err != nil {
 			b.Fatalf("%v", err)
 		}
+
+		verify()
 	}
 }
 
 func runBinaryRoundTrip(b *testing.B, in any, out any, verify func()) {
 	var wire bytes.Buffer
 	r := bytes.NewReader(nil)
-	if err := binary.Write(&wire, binary.BigEndian, in); err != nil {
-		b.Fatalf("%v", err)
-	}
-	r.Reset(wire.Bytes())
-	if err := binary.Read(r, binary.BigEndian, out); err != nil {
-		b.Fatalf("%v", err)
-	}
-	verify()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -333,22 +314,14 @@ func runBinaryRoundTrip(b *testing.B, in any, out any, verify func()) {
 		if err := binary.Read(r, binary.BigEndian, out); err != nil {
 			b.Fatalf("%v", err)
 		}
+
+		verify()
 	}
 }
 
 func runBinaryRawStringRoundTrip(b *testing.B, in string, out *string, verify func()) {
 	var wire bytes.Buffer
 	r := bytes.NewReader(nil)
-	if _, err := wire.WriteString(in); err != nil {
-		b.Fatalf("%v", err)
-	}
-	r.Reset(wire.Bytes())
-	payload, err := io.ReadAll(r)
-	if err != nil {
-		b.Fatalf("%v", err)
-	}
-	*out = string(payload)
-	verify()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -362,22 +335,13 @@ func runBinaryRawStringRoundTrip(b *testing.B, in string, out *string, verify fu
 			b.Fatalf("%v", err)
 		}
 		*out = string(payload)
+		verify()
 	}
 }
 
 func runBinaryRawBytesRoundTrip(b *testing.B, in []byte, out *[]byte, verify func()) {
 	var wire bytes.Buffer
 	r := bytes.NewReader(nil)
-	if _, err := wire.Write(in); err != nil {
-		b.Fatalf("%v", err)
-	}
-	r.Reset(wire.Bytes())
-	payload, err := io.ReadAll(r)
-	if err != nil {
-		b.Fatalf("%v", err)
-	}
-	*out = append((*out)[:0], payload...)
-	verify()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -391,6 +355,8 @@ func runBinaryRawBytesRoundTrip(b *testing.B, in []byte, out *[]byte, verify fun
 			b.Fatalf("%v", err)
 		}
 		*out = append((*out)[:0], payload...)
+
+		verify()
 	}
 }
 
@@ -405,16 +371,6 @@ func runMsgPackRoundTrip(b *testing.B, in any, out any, verify func()) {
 	enc := msgpack.NewEncoder(wire)
 	dec := msgpack.NewDecoder(wire)
 
-	if err := enc.Encode(in); err != nil {
-		b.Skipf("msgpack unsupported type %T: %v", in, err)
-		return
-	}
-	if err := dec.Decode(out); err != nil {
-		b.Skipf("msgpack decode unsupported type %T: %v", in, err)
-		return
-	}
-	verify()
-
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		wire.Reset()
@@ -426,5 +382,7 @@ func runMsgPackRoundTrip(b *testing.B, in any, out any, verify func()) {
 			b.Skipf("msgpack decode unsupported type %T: %v", in, err)
 			return
 		}
+
+		verify()
 	}
 }

@@ -27,7 +27,7 @@ func benchmarkStructBitbox(b *testing.B, in aligned4Fields) {
 	b.ReportAllocs()
 
 	buf := bitbox.NewBuffer([]byte{})
-	bitbox.Encode(buf, &in)
+	bitbox.EncodePOD(buf, &in)
 	bitbox.Decode(buf, &out)
 	test.AssertEqual(b, in, out)
 
@@ -35,7 +35,7 @@ func benchmarkStructBitbox(b *testing.B, in aligned4Fields) {
 
 	for i := 0; i < b.N; i++ {
 		buf.Clear()
-		bitbox.Encode(buf, &in)
+		bitbox.EncodePOD(buf, &in)
 		bitbox.Decode(buf, &out)
 	}
 }

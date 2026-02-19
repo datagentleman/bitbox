@@ -36,14 +36,11 @@ func decode(buf *Buffer, val reflect.Value) {
 		buf.Read(toBytes(val, size))
 
 	case reflect.Slice:
-		decodeSlice(buf, val)
+		decodeSlice(buf, val, false)
 	case reflect.Array:
 		decodeArray(buf, val)
-
 	case reflect.Struct:
-		size := int(val.Type().Size())
-		buf.Read(toBytes(val, size))
-
+		decodeStruct(buf, val)
 	case reflect.String:
 		l := uint32(0)
 		buf.Decode(&l)
@@ -52,40 +49,31 @@ func decode(buf *Buffer, val reflect.Value) {
 }
 
 // Decode structs.
-func DecodeStruct(buf *Buffer, objects ...any) {
-	for _, obj := range objects {
-		val := reflect.ValueOf(obj)
+func decodeStruct(buf *Buffer, val reflect.Value) {
+	if !val.IsValid() {
+		return
+	}
 
-		if val.Kind() != reflect.Pointer || val.IsNil() {
-			continue
-		}
+	for i := 0; i < val.NumField(); i++ {
+		field := val.Field(i)
 
-		val = val.Elem()
-		if !val.IsValid() || val.Kind() != reflect.Struct {
-			continue
-		}
+		if field.Kind() == reflect.Pointer {
+			ptrFlag := uint8(1)
+			buf.Read(ToBytes(&ptrFlag))
 
-		for i := 0; i < val.NumField(); i++ {
-			field := val.Field(i)
-
-			if field.Kind() == reflect.Pointer {
-				ptrFlag := uint8(0)
-				buf.Read(ToBytes(&ptrFlag))
-
-				if ptrFlag == 0 {
-					field.Set(reflect.Zero(field.Type()))
-					continue
-				}
-
-				if field.IsNil() {
-					field.Set(reflect.New(field.Type().Elem()))
-				}
-
-				field = field.Elem()
+			if ptrFlag == 0 {
+				field.Set(reflect.Zero(field.Type()))
+				continue
 			}
 
-			decode(buf, field)
+			if field.IsNil() {
+				field.Set(reflect.New(field.Type().Elem()))
+			}
+
+			field = field.Elem()
 		}
+
+		decode(buf, field)
 	}
 }
 
@@ -94,25 +82,50 @@ func decodeArray(buf *Buffer, val reflect.Value) {
 	elem := val.Type().Elem()
 	total := val.Len() * int(elem.Size())
 
-	buf.Read(toBytes(val, int(total)))
+	switch elem.Kind() {
+	// nested arrays
+	case reflect.Array:
+		for i := 0; i < val.Len(); i++ {
+			decodeArray(buf, val.Index(i))
+		}
+	default:
+		buf.Read(toBytes(val, int(total)))
+	}
 }
 
 // Decode slices.
-func decodeSlice(buf *Buffer, val reflect.Value) {
-	elem := val.Type().Elem()
-	tsize := uint32(elem.Size())
-
+func decodeSlice(buf *Buffer, val reflect.Value, isPOD bool) {
 	num := uint32(0)
 	buf.Decode(&num)
 
-	if val.Cap() < int(num) {
-		val.Set(MakeSlice(val.Type(), int(num)))
+	ensureLen(val, int(num))
+	elem := val.Type().Elem()
+
+	switch elem.Kind() {
+	// nested slice
+	case reflect.Slice:
+		for i := 0; i < val.Len(); i++ {
+			decodeSlice(buf, val.Index(i), isPOD)
+		}
+	case reflect.Struct:
+		if isPOD {
+			tsize := uint32(elem.Size())
+			total := int(num * tsize)
+
+			buf.Read(toBytes(val, int(total)))
+			return
+		}
+
+		for i := 0; i < val.Len(); i++ {
+			decodeStruct(buf, val.Index(i))
+		}
+
+	default:
+		tsize := uint32(elem.Size())
+		total := int(num * tsize)
+
+		buf.Read(toBytes(val, int(total)))
 	}
-
-	val.SetLen(int(num))
-
-	total := int(num * tsize)
-	buf.Read(toBytes(val, int(total)))
 }
 
 func decodeFixed(buf *Buffer, obj any) bool {
