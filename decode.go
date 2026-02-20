@@ -13,18 +13,19 @@ func Decode(buf *Buffer, objects ...any) {
 		}
 
 		// Slow path - reflections
-		v := reflect.ValueOf(obj)
-		v = reflect.Indirect(v)
+		val := reflect.ValueOf(obj)
+		val = reflect.Indirect(val)
 
-		if !v.IsValid() {
+		if !val.IsValid() {
 			continue
 		}
 
-		decode(buf, v)
+		isPOD := false
+		decode(buf, val, isPOD)
 	}
 }
 
-func decode(buf *Buffer, val reflect.Value) {
+func decode(buf *Buffer, val reflect.Value, isPOD bool) {
 	switch val.Kind() {
 	case
 		reflect.Bool, reflect.Uintptr, reflect.Int, reflect.Int8, reflect.Int16,
@@ -36,11 +37,11 @@ func decode(buf *Buffer, val reflect.Value) {
 		buf.Read(toBytes(val, size))
 
 	case reflect.Slice:
-		decodeSlice(buf, val, false)
+		decodeSlice(buf, val, isPOD)
 	case reflect.Array:
-		decodeArray(buf, val)
+		decodeArray(buf, val, isPOD)
 	case reflect.Struct:
-		decodeStruct(buf, val)
+		decodeStruct(buf, val, isPOD)
 	case reflect.String:
 		l := uint32(0)
 		buf.Decode(&l)
@@ -49,7 +50,7 @@ func decode(buf *Buffer, val reflect.Value) {
 }
 
 // Decode structs.
-func decodeStruct(buf *Buffer, val reflect.Value) {
+func decodeStruct(buf *Buffer, val reflect.Value, isPOD bool) {
 	if !val.IsValid() {
 		return
 	}
@@ -73,23 +74,22 @@ func decodeStruct(buf *Buffer, val reflect.Value) {
 			field = field.Elem()
 		}
 
-		decode(buf, field)
+		decode(buf, field, isPOD)
 	}
 }
 
 // Decode arrays.
-func decodeArray(buf *Buffer, val reflect.Value) {
+func decodeArray(buf *Buffer, val reflect.Value, isPOD bool) {
 	elem := val.Type().Elem()
 	total := val.Len() * int(elem.Size())
 
-	switch elem.Kind() {
-	// nested arrays
-	case reflect.Array:
-		for i := 0; i < val.Len(); i++ {
-			decodeArray(buf, val.Index(i))
-		}
-	default:
+	if isFixedType(elem.Kind()) {
 		buf.Read(toBytes(val, int(total)))
+		return
+	}
+
+	for i := 0; i < val.Len(); i++ {
+		decode(buf, val.Index(i), isPOD)
 	}
 }
 
@@ -101,30 +101,16 @@ func decodeSlice(buf *Buffer, val reflect.Value, isPOD bool) {
 	ensureLen(val, int(num))
 	elem := val.Type().Elem()
 
-	switch elem.Kind() {
-	// nested slice
-	case reflect.Slice:
-		for i := 0; i < val.Len(); i++ {
-			decodeSlice(buf, val.Index(i), isPOD)
-		}
-	case reflect.Struct:
-		if isPOD {
-			tsize := uint32(elem.Size())
-			total := int(num * tsize)
-
-			buf.Read(toBytes(val, int(total)))
-			return
-		}
-
-		for i := 0; i < val.Len(); i++ {
-			decodeStruct(buf, val.Index(i))
-		}
-
-	default:
+	if isFixedType(elem.Kind()) {
 		tsize := uint32(elem.Size())
 		total := int(num * tsize)
 
 		buf.Read(toBytes(val, int(total)))
+		return
+	}
+
+	for i := 0; i < val.Len(); i++ {
+		decode(buf, val.Index(i), isPOD)
 	}
 }
 
@@ -134,7 +120,14 @@ func decodeFixed(buf *Buffer, obj any) bool {
 	case *[]byte:
 		l := uint32(0)
 		buf.Decode(&l)
-		*val = append(*val, buf.Next(int(l))...)
+
+		if cap(*val) < int(l) {
+			*val = make([]byte, l)
+		} else {
+			*val = (*val)[:l]
+		}
+
+		copy(*val, buf.Next(int(l)))
 
 	// Basic Pointers
 	case *int:

@@ -24,8 +24,7 @@ func Encode(buf *Buffer, objects ...any) {
 	}
 }
 
-// Encode slices with fixed elements. If slice elements are structs,
-// they will be encoded as POD struct (they must be memory aligned).
+// Encode slices.
 func encodeSlice(buf *Buffer, val reflect.Value, isPOD bool) {
 	elem := val.Type().Elem()
 
