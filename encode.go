@@ -8,7 +8,8 @@ import (
 func Encode(buf *Buffer, objects ...any) {
 	for _, obj := range objects {
 		// Fast path - type cast
-		if encodeFixed(buf, obj) {
+		err := encodeFixed(buf, obj)
+		if err == nil {
 			continue
 		}
 
@@ -25,7 +26,7 @@ func Encode(buf *Buffer, objects ...any) {
 }
 
 // Encode slices.
-func encodeSlice(buf *Buffer, val reflect.Value, isPOD bool) {
+func encodeSlice(buf *Buffer, val reflect.Value, isPOD bool) error {
 	elem := val.Type().Elem()
 
 	// write number of elements
@@ -39,22 +40,27 @@ func encodeSlice(buf *Buffer, val reflect.Value, isPOD bool) {
 		total := count * uint32(size)
 
 		buf.Write(toBytes(val, int(total)))
-		return
+		return nil
 	}
 
 	for i := 0; i < val.Len(); i++ {
-		encode(buf, val.Index(i), isPOD)
+		err := encode(buf, val.Index(i), isPOD)
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 // Encode POD structs. Ensure that your objects
 // are pure POD and they are memory aligned.
-func EncodePOD(buf *Buffer, object any) {
+func EncodePOD(buf *Buffer, object any) error {
 	val := reflect.ValueOf(object)
 	val = reflect.Indirect(val)
 
 	if !val.IsValid() {
-		return
+		return invalidValue(val)
 	}
 
 	val = addressable(val)
@@ -68,12 +74,14 @@ func EncodePOD(buf *Buffer, object any) {
 	// named types, ...
 	default:
 		isPOD := true
-		encode(buf, val, isPOD)
+		return encode(buf, val, isPOD)
 	}
+
+	return nil
 }
 
 // Encode array.
-func encodeArray(buf *Buffer, val reflect.Value, isPOD bool) {
+func encodeArray(buf *Buffer, val reflect.Value, isPOD bool) error {
 	elem := val.Type().Elem()
 
 	if isFixedType(elem.Kind()) {
@@ -83,18 +91,23 @@ func encodeArray(buf *Buffer, val reflect.Value, isPOD bool) {
 		val = addressable(val)
 		buf.Write(toBytes(val, int(total)))
 
-		return
+		return nil
 	}
 
 	for i := 0; i < val.Len(); i++ {
-		encode(buf, val.Index(i), isPOD)
+		err := encode(buf, val.Index(i), isPOD)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func encodeStruct(buf *Buffer, val reflect.Value, isPOD bool) {
+func encodeStruct(buf *Buffer, val reflect.Value, isPOD bool) error {
 	val = reflect.Indirect(val)
+
 	if !val.IsValid() {
-		return
+		return invalidValue(val)
 	}
 
 	val = addressable(val)
@@ -102,7 +115,7 @@ func encodeStruct(buf *Buffer, val reflect.Value, isPOD bool) {
 	if isPOD {
 		size := int(val.Type().Size())
 		buf.Write(toBytes(val, size))
-		return
+		return nil
 	}
 
 	for i := 0; i < val.NumField(); i++ {
@@ -123,12 +136,18 @@ func encodeStruct(buf *Buffer, val reflect.Value, isPOD bool) {
 			field = reflect.Indirect(field)
 		}
 
-		encode(buf, field, isPOD)
+		err := encode(buf, field, isPOD)
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 // This also handle named types.
-func encode(buf *Buffer, val reflect.Value, isPOD bool) {
+func encode(buf *Buffer, val reflect.Value, isPOD bool) error {
+	var err error
 	kind := val.Kind()
 
 	switch kind {
@@ -142,18 +161,22 @@ func encode(buf *Buffer, val reflect.Value, isPOD bool) {
 		buf.Write(toBytes(val, size))
 
 	case reflect.Slice:
-		encodeSlice(buf, val, isPOD)
+		err = encodeSlice(buf, val, isPOD)
 	case reflect.Array:
-		encodeArray(buf, val, isPOD)
+		err = encodeArray(buf, val, isPOD)
 	case reflect.String:
-		encodeFixed(buf, val.String())
+		err = encodeFixed(buf, val.String())
 	case reflect.Struct:
-		encodeStruct(buf, val, isPOD)
+		err = encodeStruct(buf, val, isPOD)
+	default:
+		err = invalidValue(val)
 	}
+
+	return err
 }
 
 // Encode basic types.
-func encodeFixed(buf *Buffer, obj any) bool {
+func encodeFixed(buf *Buffer, obj any) error {
 	switch val := obj.(type) {
 	// Values
 	case int8:
@@ -242,7 +265,8 @@ func encodeFixed(buf *Buffer, obj any) bool {
 		buf.Write(b)
 
 	default:
-		return false
+		return invalidValue(reflect.ValueOf(val))
 	}
-	return true
+
+	return nil
 }

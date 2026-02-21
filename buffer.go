@@ -12,8 +12,8 @@ func NewBuffer(data []byte) *Buffer {
 }
 
 // Decode data from buffer into objects.
-func (b *Buffer) Decode(objects ...any) {
-	Decode(b, objects...)
+func (b *Buffer) Decode(objects ...any) error {
+	return Decode(b, objects...)
 }
 
 // Return remaining buffer length.
@@ -36,21 +36,20 @@ func (b *Buffer) Write(src []byte) {
 
 // Take next N bytes from buffer.
 // This will advance offset.
-func (b *Buffer) Next(num int) []byte {
+func (b *Buffer) Next(num int) ([]byte, error) {
+	if b.off+num > len(b.data) {
+		return nil, outOfBounds(b.off+num, len(b.data))
+	}
+
 	off := b.off
 	b.off += num
 
-	return b.data[off:b.off]
+	return b.data[off:b.off], nil
 }
 
 // Return remaining bytes from buffer.
 func (b *Buffer) Data() []byte {
 	return b.data[b.off:]
-}
-
-// Advance data offset.
-func (b *Buffer) Consume(n int) {
-	b.off += n
 }
 
 // Clear all bytes in buffer.

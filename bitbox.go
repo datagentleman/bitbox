@@ -1,9 +1,32 @@
 package bitbox
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 	"unsafe"
 )
+
+var (
+	ErrUnknownType  = errors.New("bitbox: unknown type")
+	ErrInvalidValue = errors.New("bitbox: invalid value")
+	ErrOutOfBounds  = errors.New("bitbox: out of bounds")
+)
+
+func unknownType(t reflect.Type) error {
+	if t == nil {
+		return fmt.Errorf("%w: <nil>", ErrUnknownType)
+	}
+	return fmt.Errorf("%w: %s", ErrUnknownType, t.String())
+}
+
+func outOfBounds(want int, have int) error {
+	return fmt.Errorf("%w: need=%d have=%d", ErrUnknownType, want, have)
+}
+
+func invalidValue(val reflect.Value) error {
+	return fmt.Errorf("%w: %s", ErrInvalidValue, val.String())
+}
 
 // Get pointer to fixed type (including structs) and cast it to []byte.
 // When passing structs, make sure they are memory aligned otherwise
@@ -47,6 +70,10 @@ func isFixedType(kind reflect.Kind) bool {
 
 func isStruct(kind reflect.Kind) bool {
 	return kind == reflect.Struct
+}
+
+func isPointer(kind reflect.Kind) bool {
+	return kind == reflect.Pointer
 }
 
 // Make slice of given type and size.
