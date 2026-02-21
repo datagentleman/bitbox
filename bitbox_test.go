@@ -14,13 +14,11 @@ type alignedStruct struct {
 	D float32
 }
 
-type NamedTypeInt1 int
 type NamedTypeInt2 int8
 type NamedTypeInt3 int16
 type NamedTypeInt4 int32
 type NamedTypeInt5 int64
 
-type NamedTypeUint1 uint
 type NamedTypeUint2 uint8
 type NamedTypeUint3 uint16
 type NamedTypeUint4 uint32
@@ -59,8 +57,10 @@ func runTest[T any](t *testing.T, name string, in T) {
 		var out T
 
 		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, in)
-		bitbox.Decode(buf, &out)
+		err := bitbox.Encode(buf, in)
+		test.AssertEqual(t, nil, err)
+		err = bitbox.Decode(buf, &out)
+		test.AssertEqual(t, nil, err)
 
 		test.AssertEqual(t, in, out)
 	})
@@ -69,8 +69,10 @@ func runTest[T any](t *testing.T, name string, in T) {
 		var out T
 
 		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, &in)
-		bitbox.Decode(buf, &out)
+		err := bitbox.Encode(buf, &in)
+		test.AssertEqual(t, nil, err)
+		err = bitbox.Decode(buf, &out)
+		test.AssertEqual(t, nil, err)
 
 		test.AssertEqual(t, in, out)
 	})
@@ -83,8 +85,10 @@ func runEncoderDecoder[T any](t *testing.T, name string, in T) {
 		var out T
 
 		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, &in)
-		bitbox.Decode(buf, &out)
+		err := bitbox.Encode(buf, &in)
+		test.AssertEqual(t, nil, err)
+		err = bitbox.Decode(buf, &out)
+		test.AssertEqual(t, nil, err)
 
 		test.AssertEqual(t, in, out)
 	})
@@ -160,8 +164,10 @@ func TestAlignedStruct(t *testing.T) {
 	out := alignedStruct{}
 
 	buf := bitbox.NewBuffer(nil)
-	bitbox.Encode(buf, &in)
-	bitbox.Decode(buf, &out)
+	err := bitbox.Encode(buf, &in)
+	test.AssertEqual(t, nil, err)
+	err = bitbox.Decode(buf, &out)
+	test.AssertEqual(t, nil, err)
 
 	test.AssertEqual(t, in, out)
 }
@@ -177,8 +183,10 @@ func TestStruct(t *testing.T) {
 		out := Tx{}
 
 		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, &in)
-		bitbox.Decode(buf, &out)
+		err := bitbox.Encode(buf, &in)
+		test.AssertEqual(t, nil, err)
+		err = bitbox.Decode(buf, &out)
+		test.AssertEqual(t, nil, err)
 
 		test.AssertEqual(t, in, out)
 	})
@@ -202,49 +210,23 @@ func TestStruct(t *testing.T) {
 		out := Tx{}
 
 		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, &in)
-		bitbox.Decode(buf, &out)
-
-		test.AssertEqual(t, in, out)
-	})
-}
-
-func TestIntAndUint(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		in := int(-7)
-		out := int(0)
-
-		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, &in)
-		bitbox.Decode(buf, &out)
-
-		test.AssertEqual(t, in, out)
-	})
-
-	t.Run("uint", func(t *testing.T) {
-		in := uint(7)
-		out := uint(0)
-
-		buf := bitbox.NewBuffer(nil)
-		bitbox.Encode(buf, &in)
-		bitbox.Decode(buf, &out)
+		err := bitbox.Encode(buf, &in)
+		test.AssertEqual(t, nil, err)
+		err = bitbox.Decode(buf, &out)
+		test.AssertEqual(t, nil, err)
 
 		test.AssertEqual(t, in, out)
 	})
 }
 
 func TestNamedTypes(t *testing.T) {
-	t.Skip("temporarily disabled")
-
 	// int
-	runEncoderDecoder(t, "named_int", NamedTypeInt1(-7))
 	runEncoderDecoder(t, "named_int8", NamedTypeInt2(-8))
 	runEncoderDecoder(t, "named_int16", NamedTypeInt3(-16))
 	runEncoderDecoder(t, "named_int32", NamedTypeInt4(-32))
 	runEncoderDecoder(t, "named_int64", NamedTypeInt5(-64))
 
 	// uint
-	runEncoderDecoder(t, "named_uint", NamedTypeUint1(7))
 	runEncoderDecoder(t, "named_uint8", NamedTypeUint2(8))
 	runEncoderDecoder(t, "named_uint16", NamedTypeUint3(16))
 	runEncoderDecoder(t, "named_uint32", NamedTypeUint4(32))

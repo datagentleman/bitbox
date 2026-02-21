@@ -21,7 +21,7 @@ func unknownType(t reflect.Type) error {
 }
 
 func outOfBounds(want int, have int) error {
-	return fmt.Errorf("%w: need=%d have=%d", ErrUnknownType, want, have)
+	return fmt.Errorf("%w: requested=%d available=%d", ErrOutOfBounds, want, have)
 }
 
 func invalidValue(val reflect.Value) error {

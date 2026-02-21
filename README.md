@@ -25,19 +25,6 @@ as long as all systems use the same endianness.
 Bitbox writes/read all data using the machine’s native endianness (typically little-endian).
 To ensure correct decoding, both encoder and decoder must run on platforms with the same endianness.
 
-# Things to do
-
-* ~~add support for nested slices~~
-* ~~add support for nested arrays~~
-* add support for POD structs
-* add support for slices with non fixed values
-* add support for arrays with non fixed values
-* add support for Maps
-* add examples
-* clean code
-* clean tests
-* clean benchmarks (0/5)
-
 # Run Tests
 
 Run all tests in the module (to run them without cache use --count=1):

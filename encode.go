@@ -5,11 +5,10 @@ import (
 	"unsafe"
 )
 
-func Encode(buf *Buffer, objects ...any) {
+func Encode(buf *Buffer, objects ...any) error {
 	for _, obj := range objects {
 		// Fast path - type cast
-		err := encodeFixed(buf, obj)
-		if err == nil {
+		if encodeFixed(buf, obj) {
 			continue
 		}
 
@@ -21,8 +20,12 @@ func Encode(buf *Buffer, objects ...any) {
 			continue
 		}
 
-		encode(buf, val, false)
+		err := encode(buf, val, false)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // Encode slices.
@@ -49,7 +52,6 @@ func encodeSlice(buf *Buffer, val reflect.Value, isPOD bool) error {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -76,7 +78,6 @@ func EncodePOD(buf *Buffer, object any) error {
 		isPOD := true
 		return encode(buf, val, isPOD)
 	}
-
 	return nil
 }
 
@@ -105,10 +106,6 @@ func encodeArray(buf *Buffer, val reflect.Value, isPOD bool) error {
 
 func encodeStruct(buf *Buffer, val reflect.Value, isPOD bool) error {
 	val = reflect.Indirect(val)
-
-	if !val.IsValid() {
-		return invalidValue(val)
-	}
 
 	val = addressable(val)
 
@@ -141,7 +138,6 @@ func encodeStruct(buf *Buffer, val reflect.Value, isPOD bool) error {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -152,8 +148,8 @@ func encode(buf *Buffer, val reflect.Value, isPOD bool) error {
 
 	switch kind {
 	case
-		reflect.Bool, reflect.Uintptr, reflect.Int, reflect.Int8, reflect.Int16,
-		reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16,
+		reflect.Bool, reflect.Uintptr, reflect.Int8, reflect.Int16,
+		reflect.Int32, reflect.Int64, reflect.Uint8, reflect.Uint16,
 		reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64,
 		reflect.Complex64, reflect.Complex128:
 
@@ -165,18 +161,17 @@ func encode(buf *Buffer, val reflect.Value, isPOD bool) error {
 	case reflect.Array:
 		err = encodeArray(buf, val, isPOD)
 	case reflect.String:
-		err = encodeFixed(buf, val.String())
+		encodeFixed(buf, val.String())
 	case reflect.Struct:
 		err = encodeStruct(buf, val, isPOD)
 	default:
 		err = invalidValue(val)
 	}
-
 	return err
 }
 
 // Encode basic types.
-func encodeFixed(buf *Buffer, obj any) error {
+func encodeFixed(buf *Buffer, obj any) bool {
 	switch val := obj.(type) {
 	// Values
 	case int8:
@@ -265,8 +260,7 @@ func encodeFixed(buf *Buffer, obj any) error {
 		buf.Write(b)
 
 	default:
-		return invalidValue(reflect.ValueOf(val))
+		return false
 	}
-
-	return nil
+	return true
 }

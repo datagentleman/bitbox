@@ -25,18 +25,6 @@ func binaryWrite[T any](b *testing.B, wire *bytes.Buffer, in T) {
 			b.Fatalf("%v", err)
 		}
 
-	case int:
-		x := int64(v)
-		if err := binary.Write(wire, binary.BigEndian, x); err != nil {
-			b.Fatalf("%v", err)
-		}
-
-	case uint:
-		x := uint64(v)
-		if err := binary.Write(wire, binary.BigEndian, x); err != nil {
-			b.Fatalf("%v", err)
-		}
-
 	case uintptr:
 		x := uint64(v)
 		if err := binary.Write(wire, binary.BigEndian, x); err != nil {
@@ -65,20 +53,6 @@ func binaryRead[T any](b *testing.B, r *bytes.Reader, out *T) {
 			b.Fatalf("%v", err)
 		}
 		*out = any(string(buf)).(T)
-
-	case int:
-		var x int64
-		if err := binary.Read(r, binary.BigEndian, &x); err != nil {
-			b.Fatalf("%v", err)
-		}
-		*out = any(int(x)).(T)
-
-	case uint:
-		var x uint64
-		if err := binary.Read(r, binary.BigEndian, &x); err != nil {
-			b.Fatalf("%v", err)
-		}
-		*out = any(uint(x)).(T)
 
 	case uintptr:
 		var x uint64

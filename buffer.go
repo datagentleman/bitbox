@@ -11,6 +11,11 @@ func NewBuffer(data []byte) *Buffer {
 	return &Buffer{data: data, off: 0}
 }
 
+// Encode data from objects into buffer.
+func (b *Buffer) Encode(objects ...any) error {
+	return Encode(b, objects...)
+}
+
 // Decode data from buffer into objects.
 func (b *Buffer) Decode(objects ...any) error {
 	return Decode(b, objects...)
@@ -37,8 +42,10 @@ func (b *Buffer) Write(src []byte) {
 // Take next N bytes from buffer.
 // This will advance offset.
 func (b *Buffer) Next(num int) ([]byte, error) {
-	if b.off+num > len(b.data) {
-		return nil, outOfBounds(b.off+num, len(b.data))
+	limit := b.off + num
+
+	if limit > len(b.data) {
+		return nil, outOfBounds(limit, len(b.data))
 	}
 
 	off := b.off

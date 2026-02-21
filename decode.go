@@ -33,7 +33,6 @@ func Decode(buf *Buffer, objects ...any) error {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -42,8 +41,8 @@ func decode(buf *Buffer, val reflect.Value, isPOD bool) error {
 
 	switch val.Kind() {
 	case
-		reflect.Bool, reflect.Uintptr, reflect.Int, reflect.Int8, reflect.Int16,
-		reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16,
+		reflect.Bool, reflect.Uintptr, reflect.Int8, reflect.Int16,
+		reflect.Int32, reflect.Int64, reflect.Uint8, reflect.Uint16,
 		reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64,
 		reflect.Complex64, reflect.Complex128:
 
@@ -67,7 +66,6 @@ func decode(buf *Buffer, val reflect.Value, isPOD bool) error {
 	default:
 		return invalidValue(val)
 	}
-
 	return err
 }
 
@@ -97,7 +95,6 @@ func decodeStruct(buf *Buffer, val reflect.Value, isPOD bool) error {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -117,7 +114,6 @@ func decodeArray(buf *Buffer, val reflect.Value, isPOD bool) error {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -143,7 +139,6 @@ func decodeSlice(buf *Buffer, val reflect.Value, isPOD bool) error {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -163,7 +158,6 @@ func decodeFixedSlice[T any](buf *Buffer, out *[]T) error {
 	b := unsafe.Slice((*byte)(unsafe.Pointer(s)), total)
 
 	buf.Read(b)
-
 	return nil
 }
 
@@ -187,8 +181,6 @@ func decodeFixed(buf *Buffer, obj any) (bool, error) {
 	switch val := obj.(type) {
 
 	// Basic Pointers
-	case *int:
-		buf.Read(ToBytes(val))
 	case *int8:
 		buf.Read(ToBytes(val))
 	case *int16:
@@ -196,8 +188,6 @@ func decodeFixed(buf *Buffer, obj any) (bool, error) {
 	case *int32:
 		buf.Read(ToBytes(val))
 	case *int64:
-		buf.Read(ToBytes(val))
-	case *uint:
 		buf.Read(ToBytes(val))
 	case *uint8:
 		buf.Read(ToBytes(val))
@@ -222,8 +212,6 @@ func decodeFixed(buf *Buffer, obj any) (bool, error) {
 
 	case *[]byte:
 		decodeFixedSlice(buf, val)
-	case *[]int:
-		decodeFixedSlice(buf, val)
 	case *[]int8:
 		decodeFixedSlice(buf, val)
 	case *[]int16:
@@ -231,8 +219,6 @@ func decodeFixed(buf *Buffer, obj any) (bool, error) {
 	case *[]int32:
 		decodeFixedSlice(buf, val)
 	case *[]int64:
-		decodeFixedSlice(buf, val)
-	case *[]uint:
 		decodeFixedSlice(buf, val)
 	case *[]uint16:
 		decodeFixedSlice(buf, val)
@@ -255,8 +241,6 @@ func decodeFixed(buf *Buffer, obj any) (bool, error) {
 
 	case *[][]byte:
 		decodeFixedSlice2D(buf, val)
-	case *[][]int:
-		decodeFixedSlice2D(buf, val)
 	case *[][]int8:
 		decodeFixedSlice2D(buf, val)
 	case *[][]int16:
@@ -264,8 +248,6 @@ func decodeFixed(buf *Buffer, obj any) (bool, error) {
 	case *[][]int32:
 		decodeFixedSlice2D(buf, val)
 	case *[][]int64:
-		decodeFixedSlice2D(buf, val)
-	case *[][]uint:
 		decodeFixedSlice2D(buf, val)
 	case *[][]uint16:
 		decodeFixedSlice2D(buf, val)
