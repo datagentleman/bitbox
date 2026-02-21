@@ -1,10 +1,7 @@
-package bitbox_test
+package bitbox
 
 import (
 	"testing"
-
-	bitbox "github.com/datagentleman/bitbox"
-	"github.com/datagentleman/bitbox/test"
 )
 
 type alignedStruct struct {
@@ -56,25 +53,25 @@ func runTest[T any](t *testing.T, name string, in T) {
 	t.Run(name+"/values", func(t *testing.T) {
 		var out T
 
-		buf := bitbox.NewBuffer(nil)
-		err := bitbox.Encode(buf, in)
-		test.AssertEqual(t, nil, err)
-		err = bitbox.Decode(buf, &out)
-		test.AssertEqual(t, nil, err)
+		buf := NewBuffer(nil)
+		err := Encode(buf, in)
+		AssertEqual(t, nil, err)
+		err = Decode(buf, &out)
+		AssertEqual(t, nil, err)
 
-		test.AssertEqual(t, in, out)
+		AssertEqual(t, in, out)
 	})
 
 	t.Run(name+"/pointers", func(t *testing.T) {
 		var out T
 
-		buf := bitbox.NewBuffer(nil)
-		err := bitbox.Encode(buf, &in)
-		test.AssertEqual(t, nil, err)
-		err = bitbox.Decode(buf, &out)
-		test.AssertEqual(t, nil, err)
+		buf := NewBuffer(nil)
+		err := Encode(buf, &in)
+		AssertEqual(t, nil, err)
+		err = Decode(buf, &out)
+		AssertEqual(t, nil, err)
 
-		test.AssertEqual(t, in, out)
+		AssertEqual(t, in, out)
 	})
 }
 
@@ -84,13 +81,13 @@ func runEncoderDecoder[T any](t *testing.T, name string, in T) {
 	t.Run(name, func(t *testing.T) {
 		var out T
 
-		buf := bitbox.NewBuffer(nil)
-		err := bitbox.Encode(buf, &in)
-		test.AssertEqual(t, nil, err)
-		err = bitbox.Decode(buf, &out)
-		test.AssertEqual(t, nil, err)
+		buf := NewBuffer(nil)
+		err := Encode(buf, &in)
+		AssertEqual(t, nil, err)
+		err = Decode(buf, &out)
+		AssertEqual(t, nil, err)
 
-		test.AssertEqual(t, in, out)
+		AssertEqual(t, in, out)
 	})
 }
 
@@ -163,13 +160,13 @@ func TestAlignedStruct(t *testing.T) {
 	in := alignedStruct{A: 123, B: 456, C: 999, D: 7.25}
 	out := alignedStruct{}
 
-	buf := bitbox.NewBuffer(nil)
-	err := bitbox.Encode(buf, &in)
-	test.AssertEqual(t, nil, err)
-	err = bitbox.Decode(buf, &out)
-	test.AssertEqual(t, nil, err)
+	buf := NewBuffer(nil)
+	err := Encode(buf, &in)
+	AssertEqual(t, nil, err)
+	err = Decode(buf, &out)
+	AssertEqual(t, nil, err)
 
-	test.AssertEqual(t, in, out)
+	AssertEqual(t, in, out)
 }
 
 func TestStruct(t *testing.T) {
@@ -182,13 +179,13 @@ func TestStruct(t *testing.T) {
 		}
 		out := Tx{}
 
-		buf := bitbox.NewBuffer(nil)
-		err := bitbox.Encode(buf, &in)
-		test.AssertEqual(t, nil, err)
-		err = bitbox.Decode(buf, &out)
-		test.AssertEqual(t, nil, err)
+		buf := NewBuffer(nil)
+		err := Encode(buf, &in)
+		AssertEqual(t, nil, err)
+		err = Decode(buf, &out)
+		AssertEqual(t, nil, err)
 
-		test.AssertEqual(t, in, out)
+		AssertEqual(t, in, out)
 	})
 
 	t.Run("with pointers", func(t *testing.T) {
@@ -209,13 +206,13 @@ func TestStruct(t *testing.T) {
 		}
 		out := Tx{}
 
-		buf := bitbox.NewBuffer(nil)
-		err := bitbox.Encode(buf, &in)
-		test.AssertEqual(t, nil, err)
-		err = bitbox.Decode(buf, &out)
-		test.AssertEqual(t, nil, err)
+		buf := NewBuffer(nil)
+		err := Encode(buf, &in)
+		AssertEqual(t, nil, err)
+		err = Decode(buf, &out)
+		AssertEqual(t, nil, err)
 
-		test.AssertEqual(t, in, out)
+		AssertEqual(t, in, out)
 	})
 }
 

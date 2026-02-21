@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	bitbox "github.com/datagentleman/bitbox"
-	"github.com/datagentleman/bitbox/test"
 	"github.com/vmihailenco/msgpack/v5"
 )
 
@@ -52,7 +51,7 @@ func benchmarkStructGob(b *testing.B, in aligned4Fields) {
 	if err := dec.Decode(&out); err != nil {
 		b.Fatalf("%v", err)
 	}
-	test.AssertEqual(b, in, out)
+	bitbox.AssertEqual(b, in, out)
 
 	b.ResetTimer()
 
@@ -86,7 +85,7 @@ func benchmarkStructBinary(b *testing.B, in aligned4Fields) {
 		b.Fatalf("%v", err)
 	}
 
-	test.AssertEqual(b, in, out)
+	bitbox.AssertEqual(b, in, out)
 
 	b.ResetTimer()
 
@@ -118,7 +117,7 @@ func benchmarkStructMsgPack(b *testing.B, in aligned4Fields) {
 	if err := dec.Decode(&out); err != nil {
 		b.Fatalf("%v", err)
 	}
-	test.AssertEqual(b, in, out)
+	bitbox.AssertEqual(b, in, out)
 
 	b.ResetTimer()
 

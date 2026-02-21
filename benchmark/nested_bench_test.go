@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	bitbox "github.com/datagentleman/bitbox"
-	"github.com/datagentleman/bitbox/test"
 	"github.com/vmihailenco/msgpack/v5"
 )
 
@@ -21,7 +20,7 @@ func benchmarkNestedBitbox[T any](b *testing.B, in T, setBytes int64) {
 	buf := bitbox.NewBuffer(nil)
 	bitbox.Encode(buf, in)
 	bitbox.Decode(buf, &out)
-	test.AssertEqual(b, in, out)
+	bitbox.AssertEqual(b, in, out)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -50,7 +49,7 @@ func benchmarkNestedGob[T any](b *testing.B, in T, setBytes int64) {
 	if err := dec.Decode(&out); err != nil {
 		b.Fatalf("%v", err)
 	}
-	test.AssertEqual(b, in, out)
+	bitbox.AssertEqual(b, in, out)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -95,7 +94,7 @@ func benchmarkNestedMsgPack[T any](b *testing.B, in T, setBytes int64) {
 		b.Skipf("msgpack decode unsupported type %T: %v", in, err)
 		return
 	}
-	test.AssertEqual(b, in, out)
+	bitbox.AssertEqual(b, in, out)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -126,7 +125,7 @@ func benchmarkNestedBinaryArray100x32Byte(b *testing.B, in [100][32]byte, setByt
 	if err := binary.Read(r, binary.BigEndian, &out); err != nil {
 		b.Fatalf("%v", err)
 	}
-	test.AssertEqual(b, in, out)
+	bitbox.AssertEqual(b, in, out)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -197,7 +196,7 @@ func benchmarkNestedBinary2DBytes(b *testing.B, in [][]byte, setBytes int64) {
 	encodeBinary2DBytes(b, &wire, in)
 	r := bytes.NewReader(wire.Bytes())
 	decodeBinary2DBytes(b, r, &out)
-	test.AssertEqual(b, in, out)
+	bitbox.AssertEqual(b, in, out)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -270,7 +269,7 @@ func benchmarkNestedBinary2DUint64(b *testing.B, in [][]uint64, setBytes int64) 
 	encodeBinary2DUint64(b, &wire, in)
 	r := bytes.NewReader(wire.Bytes())
 	decodeBinary2DUint64(b, r, &out)
-	test.AssertEqual(b, in, out)
+	bitbox.AssertEqual(b, in, out)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

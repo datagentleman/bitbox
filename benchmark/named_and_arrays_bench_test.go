@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	bitbox "github.com/datagentleman/bitbox"
-	"github.com/datagentleman/bitbox/test"
 	"github.com/vmihailenco/msgpack/v5"
 )
 
@@ -85,19 +84,19 @@ func makePointerScalarCase[TNamed any](name string, setBytes int64, in TNamed) n
 		setBytes: setBytes,
 		runBitbox: func(b *testing.B) {
 			var out TNamed
-			runBitboxRoundTrip(b, &in, &out, func() { test.AssertEqual(b, in, out) })
+			runBitboxRoundTrip(b, &in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 		runGob: func(b *testing.B) {
 			var out TNamed
-			runGobRoundTrip(b, &in, &out, func() { test.AssertEqual(b, in, out) })
+			runGobRoundTrip(b, &in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 		runBinary: func(b *testing.B) {
 			var out TNamed
-			runBinaryRoundTrip(b, &in, &out, func() { test.AssertEqual(b, in, out) })
+			runBinaryRoundTrip(b, &in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 		runMsgPack: func(b *testing.B) {
 			var out TNamed
-			runMsgPackRoundTrip(b, &in, &out, func() { test.AssertEqual(b, in, out) })
+			runMsgPackRoundTrip(b, &in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 	}
 }
@@ -109,19 +108,19 @@ func makeStringCase[TNamed ~string](name string, in TNamed) namedBenchCase {
 		setBytes: setBytes,
 		runBitbox: func(b *testing.B) {
 			var out TNamed
-			runBitboxRoundTrip(b, in, &out, func() { test.AssertEqual(b, in, out) })
+			runBitboxRoundTrip(b, in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 		runGob: func(b *testing.B) {
 			var out TNamed
-			runGobRoundTrip(b, in, &out, func() { test.AssertEqual(b, in, out) })
+			runGobRoundTrip(b, in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 		runBinary: func(b *testing.B) {
 			var out string
-			runBinaryRawStringRoundTrip(b, string(in), &out, func() { test.AssertEqual(b, in, TNamed(out)) })
+			runBinaryRawStringRoundTrip(b, string(in), &out, func() { bitbox.AssertEqual(b, in, TNamed(out)) })
 		},
 		runMsgPack: func(b *testing.B) {
 			var out TNamed
-			runMsgPackRoundTrip(b, in, &out, func() { test.AssertEqual(b, in, out) })
+			runMsgPackRoundTrip(b, in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 	}
 }
@@ -133,19 +132,19 @@ func makeBytesCase[TNamed ~[]byte](name string, in TNamed) namedBenchCase {
 		setBytes: setBytes,
 		runBitbox: func(b *testing.B) {
 			var out TNamed
-			runBitboxRoundTrip(b, in, &out, func() { test.AssertEqual(b, in, out) })
+			runBitboxRoundTrip(b, in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 		runGob: func(b *testing.B) {
 			var out TNamed
-			runGobRoundTrip(b, in, &out, func() { test.AssertEqual(b, in, out) })
+			runGobRoundTrip(b, in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 		runBinary: func(b *testing.B) {
 			var out []byte
-			runBinaryRawBytesRoundTrip(b, []byte(in), &out, func() { test.AssertEqual(b, in, TNamed(out)) })
+			runBinaryRawBytesRoundTrip(b, []byte(in), &out, func() { bitbox.AssertEqual(b, in, TNamed(out)) })
 		},
 		runMsgPack: func(b *testing.B) {
 			var out TNamed
-			runMsgPackRoundTrip(b, in, &out, func() { test.AssertEqual(b, in, out) })
+			runMsgPackRoundTrip(b, in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 	}
 }
@@ -158,19 +157,19 @@ func makeSliceLenPrefixCase[TNamed ~[]TElem, TElem any](name string, elemSize in
 		setBytes: setBytes,
 		runBitbox: func(b *testing.B) {
 			var out TNamed
-			runBitboxRoundTrip(b, in, &out, func() { test.AssertEqual(b, in, out) })
+			runBitboxRoundTrip(b, in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 		runGob: func(b *testing.B) {
 			var out TNamed
-			runGobRoundTrip(b, in, &out, func() { test.AssertEqual(b, in, out) })
+			runGobRoundTrip(b, in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 		runBinary: func(b *testing.B) {
 			out := make([]TElem, len(in))
-			runBinaryRoundTrip(b, []TElem(in), &out, func() { test.AssertEqual(b, in, TNamed(out)) })
+			runBinaryRoundTrip(b, []TElem(in), &out, func() { bitbox.AssertEqual(b, in, TNamed(out)) })
 		},
 		runMsgPack: func(b *testing.B) {
 			var out TNamed
-			runMsgPackRoundTrip(b, in, &out, func() { test.AssertEqual(b, in, out) })
+			runMsgPackRoundTrip(b, in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 	}
 }
@@ -183,19 +182,19 @@ func makeNamedType17Case(name string, in NamedType17) namedBenchCase {
 		setBytes: setBytes,
 		runBitbox: func(b *testing.B) {
 			var out NamedType17
-			runBitboxRoundTrip(b, &in, &out, func() { test.AssertEqual(b, in, out) })
+			runBitboxRoundTrip(b, &in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 		runGob: func(b *testing.B) {
 			var out NamedType17
-			runGobRoundTrip(b, &in, &out, func() { test.AssertEqual(b, in, out) })
+			runGobRoundTrip(b, &in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 		runBinary: func(b *testing.B) {
 			var out NamedType17
-			runBinaryRoundTrip(b, &in, &out, func() { test.AssertEqual(b, in, out) })
+			runBinaryRoundTrip(b, &in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 		runMsgPack: func(b *testing.B) {
 			var out NamedType17
-			runMsgPackRoundTrip(b, &in, &out, func() { test.AssertEqual(b, in, out) })
+			runMsgPackRoundTrip(b, &in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 	}
 }
@@ -209,19 +208,19 @@ func makeNamedType18Case(name string, in NamedType18) namedBenchCase {
 		setBytes: setBytes,
 		runBitbox: func(b *testing.B) {
 			var out NamedType18
-			runBitboxRoundTrip(b, &in, &out, func() { test.AssertEqual(b, in, out) })
+			runBitboxRoundTrip(b, &in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 		runGob: func(b *testing.B) {
 			var out NamedType18
-			runGobRoundTrip(b, &in, &out, func() { test.AssertEqual(b, in, out) })
+			runGobRoundTrip(b, &in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 		runBinary: func(b *testing.B) {
 			var out NamedType18
-			runBinaryRoundTrip(b, &in, &out, func() { test.AssertEqual(b, in, out) })
+			runBinaryRoundTrip(b, &in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 		runMsgPack: func(b *testing.B) {
 			var out NamedType18
-			runMsgPackRoundTrip(b, &in, &out, func() { test.AssertEqual(b, in, out) })
+			runMsgPackRoundTrip(b, &in, &out, func() { bitbox.AssertEqual(b, in, out) })
 		},
 	}
 }
@@ -277,7 +276,7 @@ func runBitboxLenPrefixPayload(b *testing.B, in any, expectedLen uint32) {
 		bitbox.Encode(buf, in)
 		bitbox.Decode(buf, &encodedLen)
 
-		test.AssertEqual(b, expectedLen, encodedLen)
+		bitbox.AssertEqual(b, expectedLen, encodedLen)
 	}
 }
 

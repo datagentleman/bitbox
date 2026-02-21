@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	bitbox "github.com/datagentleman/bitbox"
-	"github.com/datagentleman/bitbox/test"
 	"github.com/vmihailenco/msgpack/v5"
 )
 
@@ -77,7 +76,7 @@ func benchmarkTypesBitbox[T any](b *testing.B, in T, setBytes int64) {
 	buf := bitbox.NewBuffer([]byte{})
 	bitbox.Encode(buf, in)
 	bitbox.Decode(buf, &out)
-	test.AssertEqual(b, in, out)
+	bitbox.AssertEqual(b, in, out)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -107,7 +106,7 @@ func benchmarkTypesGob[T any](b *testing.B, in T, setBytes int64) {
 		b.Fatalf("%v", err)
 	}
 
-	test.AssertEqual(b, in, out)
+	bitbox.AssertEqual(b, in, out)
 
 	b.ResetTimer()
 
@@ -139,7 +138,7 @@ func benchmarkBinary[T any](b *testing.B, in T, setBytes int64) {
 	r := bytes.NewReader(wire.Bytes())
 	binaryRead(b, r, &out)
 
-	test.AssertEqual(b, in, out)
+	bitbox.AssertEqual(b, in, out)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -176,7 +175,7 @@ func benchmarkTypesMsgPack[T any](b *testing.B, in T, setBytes int64) {
 		b.Skipf("msgpack decode unsupported type %T: %v", in, err)
 		return
 	}
-	test.AssertEqual(b, in, out)
+	bitbox.AssertEqual(b, in, out)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

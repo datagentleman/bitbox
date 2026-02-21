@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	bitbox "github.com/datagentleman/bitbox"
-	"github.com/datagentleman/bitbox/test"
 	"github.com/vmihailenco/msgpack/v5"
 )
 
@@ -60,7 +59,7 @@ func benchmarkTxBitbox(b *testing.B, in tx) {
 		buf.Clear()
 		bitbox.Encode(buf, &in)
 		bitbox.Decode(buf, &out)
-		test.AssertEqual(b, in, out)
+		bitbox.AssertEqual(b, in, out)
 	}
 }
 
@@ -80,7 +79,7 @@ func benchmarkTxGob(b *testing.B, in tx) {
 		dec := gob.NewDecoder(bytes.NewReader(wire.Bytes()))
 		_ = dec.Decode(&out)
 
-		test.AssertEqual(b, in, out)
+		bitbox.AssertEqual(b, in, out)
 	}
 }
 
@@ -99,7 +98,7 @@ func benchmarkTxMsgPack(b *testing.B, in tx) {
 		wire.Reset()
 		enc.Encode(&in)
 		dec.Decode(&out)
-		test.AssertEqual(b, in, out)
+		bitbox.AssertEqual(b, in, out)
 	}
 }
 
