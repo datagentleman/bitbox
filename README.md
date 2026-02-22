@@ -87,7 +87,6 @@ bit.Encode(&tx1)
 bit.Decode(&tx2)
 ```
 
-
 # Things to do
 
 * add missing types (Maps, int, uint, math.big, ...)
@@ -184,7 +183,7 @@ see `BENCHMARKS.md`.
 | array_100x100_tx | Binary | --- | --- | --- | --- |
 | array_100x100_tx | MsgPack | 11894120 | 161.42 | 2966658 | 120001 |
 
-# Benchmark Results (Aligned Struct)
+# Benchmark Results (POD structs)
 
 | Benchmark | Codec | ns/op | MB/s | B/op | allocs/op |
 |:----------|:------|------:|-----:|-----:|----------:|
