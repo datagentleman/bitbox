@@ -16,6 +16,16 @@ func (b *Buffer) Encode(objects ...any) error {
 	return Encode(b, objects...)
 }
 
+// Encode POD objects.
+func (b *Buffer) EncodePOD(object any) error {
+	return EncodePOD(b, object)
+}
+
+// Decode POD objects.
+func (b *Buffer) DecodePOD(object any) error {
+	return DecodePOD(b, object)
+}
+
 // Decode data from buffer into objects.
 func (b *Buffer) Decode(objects ...any) error {
 	return Decode(b, objects...)
@@ -48,10 +58,10 @@ func (b *Buffer) Next(num int) ([]byte, error) {
 		return nil, outOfBounds(limit, len(b.data))
 	}
 
-	off := b.off
+	old := b.off
 	b.off += num
 
-	return b.data[off:b.off], nil
+	return b.data[old:b.off], nil
 }
 
 // Return remaining bytes from buffer.

@@ -20,24 +20,27 @@ type aligned4Fields struct {
 
 const aligned4FieldsSizeBytes = 16
 
-func benchmarkStructBitbox(b *testing.B, in aligned4Fields) {
-	var out aligned4Fields
-	b.SetBytes(aligned4FieldsSizeBytes * 2)
+func benchmarkStructBitbox(b *testing.B, in []aligned4Fields) {
+	out := []aligned4Fields{}
+	b.SetBytes(int64(aligned4FieldsSizeBytes * len(in) * 2))
 	b.ReportAllocs()
 
 	buf := bitbox.NewBuffer([]byte{})
+	bitbox.EncodePOD(buf, &in)
+	bitbox.DecodePOD(buf, &out)
+	bitbox.AssertEqual(b, in, out)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		buf.Clear()
 		bitbox.EncodePOD(buf, &in)
-		bitbox.Decode(buf, &out)
+		bitbox.DecodePOD(buf, &out)
 	}
 }
 
-func benchmarkStructGob(b *testing.B, in aligned4Fields) {
-	var out aligned4Fields
-	b.SetBytes(aligned4FieldsSizeBytes * 2)
+func benchmarkStructGob(b *testing.B, in []aligned4Fields) {
+	var out []aligned4Fields
+	b.SetBytes(int64(aligned4FieldsSizeBytes * len(in) * 2))
 	b.ReportAllocs()
 
 	var wire bytes.Buffer
@@ -54,25 +57,20 @@ func benchmarkStructGob(b *testing.B, in aligned4Fields) {
 	bitbox.AssertEqual(b, in, out)
 
 	b.ResetTimer()
-
 	for i := 0; i < b.N; i++ {
 		wire.Reset()
 		enc := gob.NewEncoder(&wire)
-		if err := enc.Encode(&in); err != nil {
-			b.Fatalf("%v", err)
-		}
+		enc.Encode(&in)
 
 		r.Reset(wire.Bytes())
 		dec := gob.NewDecoder(r)
-		if err := dec.Decode(&out); err != nil {
-			b.Fatalf("%v", err)
-		}
+		dec.Decode(&out)
 	}
 }
 
-func benchmarkStructBinary(b *testing.B, in aligned4Fields) {
-	var out aligned4Fields
-	b.SetBytes(aligned4FieldsSizeBytes * 2)
+func benchmarkStructBinary(b *testing.B, in []aligned4Fields) {
+	out := make([]aligned4Fields, len(in))
+	b.SetBytes(int64(aligned4FieldsSizeBytes * len(in) * 2))
 	b.ReportAllocs()
 
 	var wire bytes.Buffer
@@ -88,23 +86,17 @@ func benchmarkStructBinary(b *testing.B, in aligned4Fields) {
 	bitbox.AssertEqual(b, in, out)
 
 	b.ResetTimer()
-
 	for i := 0; i < b.N; i++ {
 		wire.Reset()
-		if err := binary.Write(&wire, binary.BigEndian, &in); err != nil {
-			b.Fatalf("%v", err)
-		}
-
+		binary.Write(&wire, binary.BigEndian, &in)
 		r.Reset(wire.Bytes())
-		if err := binary.Read(r, binary.BigEndian, &out); err != nil {
-			b.Fatalf("%v", err)
-		}
+		binary.Read(r, binary.BigEndian, &out)
 	}
 }
 
-func benchmarkStructMsgPack(b *testing.B, in aligned4Fields) {
-	var out aligned4Fields
-	b.SetBytes(aligned4FieldsSizeBytes * 2)
+func benchmarkStructMsgPack(b *testing.B, in []aligned4Fields) {
+	var out []aligned4Fields
+	b.SetBytes(int64(aligned4FieldsSizeBytes * len(in) * 2))
 	b.ReportAllocs()
 
 	wire := bytes.NewBuffer(nil)
@@ -118,26 +110,26 @@ func benchmarkStructMsgPack(b *testing.B, in aligned4Fields) {
 		b.Fatalf("%v", err)
 	}
 	bitbox.AssertEqual(b, in, out)
-
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		wire.Reset()
-		if err := enc.Encode(&in); err != nil {
-			b.Fatalf("%v", err)
-		}
-		if err := dec.Decode(&out); err != nil {
-			b.Fatalf("%v", err)
-		}
+		enc.Encode(&in)
+		dec.Decode(&out)
 	}
 }
 
 func BenchmarkEncodeDecodeStruct(b *testing.B) {
-	in := aligned4Fields{
+	pod := aligned4Fields{
 		A: 0x1122334455667788,
 		B: 0x99AABBCC,
 		C: 0xDDEE,
 		D: 0xFF00,
+	}
+
+	in := make([]aligned4Fields, 0, 100)
+	for i := 0; i < 100; i++ {
+		in = append(in, pod)
 	}
 
 	b.Run("Bitbox", func(b *testing.B) {

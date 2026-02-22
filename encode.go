@@ -36,9 +36,15 @@ func encodeSlice(buf *Buffer, val reflect.Value, isPOD bool) error {
 	count := uint32(val.Len())
 	buf.Write(ToBytes(&count))
 
-	if isFixedType(elem.Kind()) {
-		val = addressable(val)
+	if isPOD && elem.Kind() == reflect.Struct {
+		size := elem.Size()
+		total := count * uint32(size)
 
+		buf.Write(toBytes(val, int(total)))
+		return nil
+	}
+
+	if isFixedType(elem.Kind()) {
 		size := elem.Size()
 		total := count * uint32(size)
 

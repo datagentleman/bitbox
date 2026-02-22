@@ -50,6 +50,16 @@ func decode(buf *Buffer, val reflect.Value, isPOD bool) error {
 		buf.Read(toBytes(val, size))
 
 	case reflect.Slice:
+		// Fast path for named bytes
+		if val.Type().Elem().Kind() == reflect.Uint8 {
+			l := uint32(0)
+			buf.Decode(&l)
+
+			ensureLen(val, int(l))
+			buf.Read(toBytes(val, int(l)))
+			return nil
+		}
+
 		err = decodeSlice(buf, val, isPOD)
 	case reflect.Array:
 		err = decodeArray(buf, val, isPOD)
@@ -71,6 +81,12 @@ func decode(buf *Buffer, val reflect.Value, isPOD bool) error {
 
 // Decode structs.
 func decodeStruct(buf *Buffer, val reflect.Value, isPOD bool) error {
+	if isPOD {
+		size := int(val.Type().Size())
+		buf.Read(toBytes(val, size))
+		return nil
+	}
+
 	for i := 0; i < val.NumField(); i++ {
 		field := val.Field(i)
 
@@ -125,6 +141,14 @@ func decodeSlice(buf *Buffer, val reflect.Value, isPOD bool) error {
 	ensureLen(val, int(num))
 	elem := val.Type().Elem()
 
+	if isPOD && elem.Kind() == reflect.Struct {
+		tsize := uint32(elem.Size())
+		total := int(num * tsize)
+
+		buf.Read(toBytes(val, total))
+		return nil
+	}
+
 	if isFixedType(elem.Kind()) {
 		tsize := uint32(elem.Size())
 		total := int(num * tsize)
@@ -159,6 +183,38 @@ func decodeFixedSlice[T any](buf *Buffer, out *[]T) error {
 
 	buf.Read(b)
 	return nil
+}
+
+func DecodePOD(buf *Buffer, object any) error {
+	if object == nil {
+		return invalidValue(reflect.ValueOf(object))
+	}
+
+	handled, err := decodeFixed(buf, object)
+	if err != nil {
+		return err
+	}
+
+	if handled {
+		return nil
+	}
+
+	val := reflect.ValueOf(object)
+
+	if !isPointer(val.Kind()) || val.IsNil() || !val.IsValid() {
+		return invalidValue(val)
+	}
+
+	val = reflect.Indirect(val)
+
+	if val.Kind() == reflect.Struct {
+		size := int(val.Type().Size())
+		buf.Read(toBytes(val, size))
+		return nil
+	}
+
+	err = decode(buf, val, true)
+	return err
 }
 
 func decodeFixedSlice2D[T any](buf *Buffer, out *[][]T) {

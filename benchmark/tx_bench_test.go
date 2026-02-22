@@ -53,13 +53,16 @@ func benchmarkTxBitbox(b *testing.B, in tx) {
 
 	b.SetBytes(txLogicalSizeBytes * 2)
 	b.ReportAllocs()
-	b.ResetTimer()
 
+	bitbox.Encode(buf, &in)
+	bitbox.Decode(buf, &out)
+	bitbox.AssertEqual(b, in, out)
+
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		buf.Clear()
 		bitbox.Encode(buf, &in)
 		bitbox.Decode(buf, &out)
-		bitbox.AssertEqual(b, in, out)
 	}
 }
 
@@ -69,8 +72,15 @@ func benchmarkTxGob(b *testing.B, in tx) {
 
 	b.SetBytes(txLogicalSizeBytes * 2)
 	b.ReportAllocs()
-	b.ResetTimer()
 
+	enc := gob.NewEncoder(&wire)
+	_ = enc.Encode(&in)
+
+	dec := gob.NewDecoder(bytes.NewReader(wire.Bytes()))
+	_ = dec.Decode(&out)
+	bitbox.AssertEqual(b, in, out)
+
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		wire.Reset()
 		enc := gob.NewEncoder(&wire)
@@ -78,8 +88,6 @@ func benchmarkTxGob(b *testing.B, in tx) {
 
 		dec := gob.NewDecoder(bytes.NewReader(wire.Bytes()))
 		_ = dec.Decode(&out)
-
-		bitbox.AssertEqual(b, in, out)
 	}
 }
 
@@ -92,13 +100,16 @@ func benchmarkTxMsgPack(b *testing.B, in tx) {
 
 	b.SetBytes(txLogicalSizeBytes * 2)
 	b.ReportAllocs()
-	b.ResetTimer()
 
+	enc.Encode(&in)
+	dec.Decode(&out)
+	bitbox.AssertEqual(b, in, out)
+
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		wire.Reset()
 		enc.Encode(&in)
 		dec.Decode(&out)
-		bitbox.AssertEqual(b, in, out)
 	}
 }
 
